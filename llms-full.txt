@@ -15,6 +15,10 @@ This file concatenates the Blueprint Chart documentation for ingestion by LLMs a
 
 # Getting Started
 
+Welcome to the Blueprint Chart documentation. Jump straight to a section below, or read on for the install quickstart.
+
+<SectionTiles />
+
 Blueprint Chart is published as four packages on NPM, plus a separate `@blueprint-chart/mcp` server for authoring charts with AI. Pick the one that matches what you're building.
 
 <table>
@@ -384,7 +388,7 @@ chart line {
 This is `packages/lib/src/samples/temperature-anomaly.bpc` — a good stress test for the highlighter because it mixes every common token class: keywords (`chart`, `data`, `annotation`), identifiers (`autoContrast`, `lineSymbolShape`), strings, numbers, enum values (`monotoneX`, `firstLast`, `curve-right`), and booleans. The fold ranges align with each top-level block.
 :::
 
-Line comments use `//` and stop at end-of-line. There are no block comments.
+The editor highlights both comment forms: line comments (`//`, to end-of-line) and block comments (`/* … */`, which may span multiple lines).
 
 ## How it works
 
