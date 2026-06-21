@@ -1578,6 +1578,66 @@ See [the API reference](/reference/api/#color-and-accessibility) for the full ex
 - [BPC DSL — Properties](/reference/dsl/properties#properties) for `autoContrast`.
 
 
+## Source: https://docs.blueprintchart.com/guide/rendering
+
+# Rendering in code
+
+The `render()` function is the primary programmatic entry point for `@blueprint-chart/lib`. It accepts a BPC source string and returns a **chart handle** — an object with methods to produce SVG, PNG, or a live DOM mount.
+
+## Node — write SVG and PNG to disk
+
+```ts
+import { render } from '@blueprint-chart/lib'
+import { writeFile } from 'node:fs/promises'
+
+const chart = await render(bpc)
+await writeFile('chart.svg', await chart.toSvg())
+await writeFile('chart.png', await chart.toPng({ width: 1200 }))
+```
+
+PNG export and headless SVG in Node require optional native deps (`jsdom`, `@napi-rs/canvas`, `@resvg/resvg-js`). These are installed automatically as `optionalDependencies`. If a binary failed to install, the Node methods throw `MissingNodeRenderDepsError` naming what to reinstall.
+
+## Browser — mount and step scenes
+
+```ts
+const { mount, scene } = await render(bpc)
+mount('#chart')   // element or selector
+scene(2)          // advance to scene index 2
+```
+
+`mount` accepts an `HTMLElement` or a CSS selector string and returns the handle for chaining. `scene(n)` steps to scene index `n` and is also chainable.
+
+## Options
+
+Pass a second argument to `render()` to control the output:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `theme` | system | `'light'` or `'dark'` |
+| `scene` | `0` | Initial scene index |
+| `width` | `640` | Output width in px (headless only) |
+| `height` | `400` | Output height in px (headless only) |
+| `frame` | `true` | `false` renders frameless (no title/source/etc.) |
+
+```ts
+const chart = await render(bpc, { theme: 'dark', width: 1200, height: 630 })
+```
+
+## The handle
+
+`render()` resolves to a `ChartHandle`. Its methods are **bound** — destructure freely — and `mount`/`scene` are **chainable**.
+
+| Method | Browser | Node | Returns |
+| --- | --- | --- | --- |
+| `toSvg(opts?)` | ✅ | ✅ | `Promise<string>` |
+| `toHtml(opts?)` | ✅ | ✅ | `Promise<string>` |
+| `toPng(opts?)` | ❌ throws `PngBrowserUnsupportedError` | ✅ | `Promise<Uint8Array>` |
+| `mount(target)` | ✅ | no-op (warns) | `ChartHandle` |
+| `scene(n)` | ✅ | ✅ | `ChartHandle` |
+
+See the [API reference](/reference/api/) for the full surface of `@blueprint-chart/lib`, including low-level rendering primitives and the chart-type registry.
+
+
 ========================================================================
 # DSL reference
 ========================================================================
@@ -2061,6 +2121,59 @@ Public surface of [`@blueprint-chart/lib`](https://www.npmjs.com/package/@bluepr
 ::: info Source of truth
 This page mirrors [`packages/lib/src/index.ts`](https://github.com/blueprint-chart/blueprint-chart/blob/main/packages/lib/src/index.ts). It will be progressively replaced by automatically-generated TypeDoc output; for now, treat the source file as canonical when a symbol is missing here.
 :::
+
+## Rendering a chart
+
+The fastest path: one function returns a chart **handle**.
+
+```ts
+import { render } from '@blueprint-chart/lib'
+
+const chart = await render(bpcSource, { theme: 'dark' })
+```
+
+### Node — write SVG and PNG to disk
+
+```ts
+import { render } from '@blueprint-chart/lib'
+import { writeFile } from 'node:fs/promises'
+
+const chart = await render(bpc)
+await writeFile('chart.svg', await chart.toSvg())
+await writeFile('chart.png', await chart.toPng({ width: 1200 }))
+```
+
+### Browser — mount and step scenes
+
+```ts
+const { mount, scene } = await render(bpc)
+mount('#chart')   // element or selector
+scene(2)          // advance to scene index 2
+```
+
+### The handle
+
+`render(source, options?)` resolves to a `ChartHandle`. Its methods are **bound** — destructure them freely (`const { toSvg } = await render(bpc)`) — and `mount`/`scene` are **chainable** (`(await render(bpc)).scene(1).toSvg()`).
+
+| Method | Browser | Node | Returns |
+| --- | --- | --- | --- |
+| `toSvg(opts?)` | ✅ | ✅ | `Promise<string>` |
+| `toHtml(opts?)` | ✅ | ✅ | `Promise<string>` |
+| `toPng(opts?)` | ❌ throws `PngBrowserUnsupportedError` | ✅ | `Promise<Uint8Array>` |
+| `mount(target)` | ✅ | no-op (warns) | `ChartHandle` |
+| `scene(n)` | ✅ | ✅ | `ChartHandle` |
+
+`toHtml()` returns the `.bc-frame` outerHTML (the complete framed chart markup). When `frame: false` was passed to `render()`, it falls back to the bare chart SVG.
+
+`RenderApiOptions`: `theme?`, `scene?` (initial scene), `width?`/`height?` (default `640×400`, used for headless output only), `frame?` (default `true`; `false` renders frameless). `OutputOptions` on `toSvg`/`toPng`: `width?`, `height?`.
+
+### Node dependencies
+
+PNG export and headless SVG in Node require optional native deps (`jsdom`, `@napi-rs/canvas`, `@resvg/resvg-js`), installed automatically as `optionalDependencies`. If a binary failed to install, the Node methods throw `MissingNodeRenderDepsError` naming what to reinstall. Browser bundles never include these.
+
+> SVG produced headlessly carries inline data colors and renders fonts via bundled DejaVu during PNG rasterization. It does not inline the full `charts.scss` theme; opening the bare `.svg` outside an app with that stylesheet may lack some structural styling.
+
+## Low-level surface
 
 ## Entrypoints
 
@@ -3820,8 +3933,10 @@ Place labels directly on or adjacent to data elements instead of using a separat
 
 ## Value labels
 
-- Show value labels when precision matters to the reader
-- On bar charts: inside the bar (if wide enough) or at the end
+For bar charts, value labels are **on by default** — they replace the value axis entirely, so each bar carries its number directly. The renderer uses an "auto: label if it fits" rule: when a bar or stack segment is too narrow to hold its label legibly, the label is suppressed and the value falls back to the tooltip instead. See [Axes & Grid Lines](/handbook/axes) for the no-value-axis default.
+
+For other chart types:
+
 - On line charts: at key data points only, not every point
 - On pie / donut charts: outside for small slices, inside for large ones
 - Position labels to avoid overlap; use tooltips as a fallback for dense data
@@ -3849,9 +3964,6 @@ chart bar-vertical {
   title = "E is the most frequent letter in English"
   description = "How often each letter appears in typical English text"
   sort = descending
-  valueLabels = true
-  verticalLabelPosition = off
-  verticalGridStyle = none
 
   data {
     "E" = 12.70
@@ -3864,7 +3976,7 @@ chart bar-vertical {
 ```
 
 ::: info From `packages/lib/src/samples/letter-frequency.bpc`
-`valueLabels = true` puts the precise number at the end of every bar, so the y-axis label position can be set to `off` and the gridlines removed entirely. Direct labelling replaces both the legend and the axis labels — a clean application of the data-ink rule.
+Value labels appear at the end of every bar by default, so the y-axis label position can be set to `off` and the gridlines removed entirely. Direct labelling replaces both the legend and the axis labels — a clean application of the data-ink rule.
 :::
 
 ## Worked example: legend at the top, direct value labels at the bar end
@@ -3875,9 +3987,6 @@ chart bar-multi {
   description = "2024 Paris Summer Games — top six nations"
   colors = "#eeca3b, #c0c0c0, #cd7f32"
   legendPosition = "top"
-  valueLabels = true
-  verticalGridStyle = none
-  verticalLabelPosition = off
   sort = descending
 
   data {
@@ -3890,7 +3999,7 @@ chart bar-multi {
 ```
 
 ::: info From `packages/lib/src/samples/medal-count.bpc`
-A multi-series bar chart needs a legend to map the three hues to Gold / Silver / Bronze — placed at the top so the eye reaches it before scanning the bars. Inside each bar, `valueLabels = true` prints the exact count, eliminating the need to read against a vertical scale.
+A multi-series bar chart needs a legend to map the three hues to Gold / Silver / Bronze — placed at the top so the eye reaches it before scanning the bars. Inside each bar, value labels print the exact count by default, eliminating the need to read against a vertical scale.
 :::
 
 ## See also
@@ -3928,6 +4037,18 @@ Truncating the y-axis on a bar or area chart visually exaggerates differences. T
 - Remove grid lines entirely when value labels are shown directly on data
 - Grid lines are reference aids, not primary content — they should never compete with data
 
+## Bar charts default to no value axis
+
+Bar charts label each bar directly, so the value axis is redundant. Every bar
+variant — vertical, horizontal, grouped, stacked, split — defaults to **no
+value-axis line, no value ticks/numbers, and no value gridlines**. Only the zero
+baseline and the category names remain.
+
+When a segment is too small to hold its label legibly, the label is suppressed
+and the value falls back to the tooltip. To restore a value axis, set
+`showVerticalAxis` / `showHorizontalAxis`, `verticalGridStyle` /
+`horizontalGridStyle`, or turn `valueLabels` off explicitly.
+
 ## Tick marks
 
 - Subtle or no ticks are preferred in modern chart design
@@ -3963,6 +4084,8 @@ A trend that looks alarming at 3:1 can look flat at 3:4. When showing rate of ch
 ## How Blueprint Chart applies axes
 
 Blueprint Chart's `AxisOptions` exposes scale type (linear / log), tick count, tick format, and baseline behavior. D3 scales drive the tick layout, and a shared number formatter is used by the axis, tooltip, and direct labels so the same value is rendered identically wherever it appears.
+
+Bar charts ship with the value axis suppressed by default — direct value labels replace it. The category axis always remains. See [Bar charts default to no value axis](#bar-charts-default-to-no-value-axis) above for the complete rule.
 
 See the [API reference](/reference/api/) for the public options that toggle grid lines, tick density, and baseline zero.
 
@@ -4183,7 +4306,6 @@ chart bar-vertical {
   source = "Lewand, Cryptological Mathematics"
   note = "Based on analysis of 40,000 words from English prose"
   valueLabels = true
-  verticalLabelPosition = off
   verticalGridStyle = none
 
   data {
@@ -4364,9 +4486,6 @@ chart bar-vertical {
   description = "Million 60-kg bags, 2023/24 crop year"
   source = "International Coffee Organization"
   colorPalette = "Harvey"
-  valueLabels = true
-  verticalGridStyle = "none"
-  horizontalGridStyle = "none"
 
   data {
     "Brazil" = 66.4
@@ -4389,7 +4508,7 @@ chart bar-vertical {
 ```
 
 ::: info From `packages/lib/src/samples/coffee-production.bpc`
-Five bars stay in muted neutrals; the `colorize "Brazil"` block lifts the one bar the title is about. `valueLabels = true` removes the need for a y-axis altogether — direct labels carry the precise numbers, and gridlines drop out entirely. Restraint, purposefulness, and "start with grey" applied in a single chart.
+Five bars stay in muted neutrals; the `colorize "Brazil"` block lifts the one bar the title is about. Direct labels carry the precise numbers by default, removing the need for a y-axis altogether, and gridlines drop out entirely. Restraint, purposefulness, and "start with grey" applied in a single chart.
 :::
 
 ## How Blueprint Chart applies these principles
