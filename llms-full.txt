@@ -167,9 +167,9 @@ make dev-docs     # these docs at http://localhost:4445
 The lib ships ~40 ready-to-run `.bpc` files under `packages/lib/src/samples/`. They double as canonical examples and as integration-test fixtures. A handful worth opening first:
 
 - `bitcoin-price.bpc` — single-series line with a brand colour, year-by-year diamond symbols, and an annotation on the 2021 peak.
-- `co2-emissions-story.bpc` — a bar chart with three scenes, each highlighting a different country to walk a reader through the same data.
-- `farm-compass.bpc` — a multi-scene narrative where later scenes swap the chart type (area → line → area-stacked) without rewriting the source.
-- `browser-market.bpc` — a donut driven by the named `Heep` palette, with right-anchored legend and percentage display.
+- `co2-emissions-story.bpc` — a bar chart with four scenes, each highlighting a different country to walk a reader through the same data.
+- `farm-compass.bpc` — a multi-scene narrative where later scenes swap the chart type (area-stacked → line → area → line-multi) without rewriting the source.
+- `browser-market.bpc` — a donut driven by the named `Imperator` palette, with right-anchored legend and percentage display.
 - `medal-count.bpc` — `bar-multi` with a gold / silver / bronze custom palette, sorted descending, top-anchored legend.
 - `temperature-anomaly.bpc` — single-series line tuned for dark mode (`autoContrast = false`, `allowDarkMode = true`) with a curved annotation calling out the 2015 Paris Agreement.
 
@@ -561,58 +561,64 @@ Journalism rarely sits still on a single chart. A finding has a build-up, a turn
 
 ## Quickstart
 
-A bar chart with three narrative beats — each one highlights a different country:
+A bar chart with four narrative beats — the first three re-spotlight a different country, and the last reframes the same story per capita:
 
 ```bpc
 chart bar-horizontal {
-  title = "Five nations produce 80% of global CO₂"
+  title = "China emits more CO₂ than the US and India combined"
   description = "Annual emissions in billion tonnes, 2023"
-  source = "Global Carbon Project"
-  sourceUrl = "https://globalcarbonproject.org"
-  sort = descending
-  valueLabels = true
-  horizontalGridStyle = none
-  showVerticalAxis = true
-  showVerticalTicks = false
-  verticalGridStyle = none
+  source = "Our World in Data"
+  sourceUrl = "https://ourworldindata.org/co2-emissions"
+  byline = "Pierre Romera"
 
   data {
-    "China" = 11.90
-    "United States" = 4.78
-    "India" = 2.88
-    "Russia" = 1.78
-    "Japan" = 1.02
+    "China" = 12.17
+    "United States" = 4.92
+    "India" = 3.06
+    "Russia" = 1.73
+    "Japan" = 0.99
+    "Germany" = 0.59
   }
 
   scene "China spotlight" {
-    title = "China emits more than the US and India combined"
-
+    title = "China alone emits more than the US and India together"
     highlight "China"
   }
 
   scene "India rising" {
-    title = "India surpassed the EU in 2023"
-
+    title = "India passed the EU to become the third-largest emitter"
     highlight "India"
   }
 
   scene "Japan declining" {
-    title = "Japan's emissions fell 20% from their peak"
-
+    title = "Japan's emissions have fallen since their 2013 peak"
     highlight "Japan"
+  }
+
+  scene "Per capita reframe" {
+    title = "Per person, Gulf states dwarf the biggest emitters"
+    description = "CO₂ emissions per capita, tonnes per person, 2023"
+    highlight "Qatar"
+    data {
+      "Qatar" = 40.13
+      "United Arab Emirates" = 19.77
+      "United States" = 14.32
+      "China" = 8.56
+      "India" = 2.13
+    }
   }
 }
 ```
 
 ::: tip From the sample library
-This is `packages/lib/src/samples/co2-emissions-story.bpc` verbatim — three scenes, each one re-titling the chart and shifting the highlight to a new country. The base data stays the same; only the framing changes.
+This is `packages/lib/src/samples/co2-emissions-story.bpc` verbatim. The first three scenes keep the same base data and only shift the title and highlight; the fourth swaps in per-capita data for a closing reframe.
 :::
 
 Open this in the editor to see the scene timeline appear automatically; embed it on a page and readers get a Previous / Next nav.
 
 ## How it works
 
-A scene block accepts the same member set as the top-level chart, **plus** annotation-visibility verbs. At parse time, each `scene` becomes a `SceneNode` in the AST. The DSL converter merges scene members on top of the base chart to produce the **effective** `ChartData` and `ChartOptions` for that scene.
+A scene block accepts the same member set as the top-level chart. At parse time, each `scene` becomes a `SceneNode` in the AST. The DSL converter merges scene members on top of the base chart to produce the **effective** `ChartData` and `ChartOptions` for that scene.
 
 At render time:
 
@@ -631,13 +637,13 @@ The short-form `highlight "<name>"` is the workhorse. Drop one per scene and the
 
 ```bpc
 scene "China spotlight" {
-  title = "China emits more than the US and India combined"
+  title = "China alone emits more than the US and India together"
 
   highlight "China"
 }
 
 scene "India rising" {
-  title = "India surpassed the EU in 2023"
+  title = "India passed the EU to become the third-largest emitter"
 
   highlight "India"
 }
@@ -653,8 +659,8 @@ Any scene can carry its own `data` block, which **replaces** the base data for t
 
 ```bpc
 scene "Bulgaria: subsidies explode" {
-  title = "Subsidies to Bulgarian farmers, million euros"
-  description = "85% of Bulgarian subsidies are direct payments — the highest share among new members"
+  title = "Bulgarian farmers received almost nothing before 2007 accession"
+  description = "More than three-quarters of Bulgarian subsidies are direct payments — the highest share among new members"
 
   data {
     series = "Indirect subsidies","Direct subsidies"
@@ -694,25 +700,43 @@ scene "Bulgarian farms grew" {
 ```
 
 ::: tip From the sample library
-Scene #5 of `packages/lib/src/samples/farm-compass.bpc`. The story changes chart type three times across nine scenes — `area-stacked` → `line` → `area` → `area-stacked` → bar — all from one document.
+Scene #4 of `packages/lib/src/samples/farm-compass.bpc`. The story changes chart type four times across its nine scenes — `area-stacked` → `line` → `area` → `area-stacked` → `line-multi` — all from one document.
 :::
 
-### Hide an annotation in a later scene
+### Control how long an annotation stays
 
-Use `hide-annotation`, `hide-range`, or `hide-note` with the annotation's id to peel things back as the story progresses:
+By default an annotation shows only in the scene where it is declared. Use
+`repeat` to carry it into later scenes:
 
 ```bpc
-annotation "2015" {
-  id = "paris"
-  text = "Paris Agreement"
+scene "Crash" {
+  range {
+    start = 2008
+    end = 2009
+    text = "Financial crisis"
+    repeat = 1         // this scene plus the next one (2 scenes total)
+  }
 }
 
-scene "Without Paris callout" {
-  hide-annotation "paris"
+scene "Recovery" {
+  annotation "2015" {
+    text = "Paris Agreement"
+    repeat = true      // this scene and every scene after it
+  }
 }
 ```
 
-To bring it back later, use `show-annotation "paris"` in a subsequent scene.
+`repeat` accepts three forms:
+
+- `false` or omitted (the default): show only in this scene.
+- a positive integer `N`: show in this scene plus the next `N` scenes, so
+  `repeat = 1` spans 2 scenes and `repeat = 3` spans 4.
+- `true`: show in this scene and every scene after it.
+
+A top-level annotation (declared on the chart itself, outside any scene)
+anchors at the base chart frame, the first thing a reader sees. With no
+`repeat` it appears only there; `repeat` carries it forward into the scenes
+that follow.
 
 ### Drive playback from your own UI
 
@@ -795,11 +819,11 @@ chart bar-vertical {
 
   data {
     "Brazil" = 66.4
-    "Vietnam" = 29
-    "Colombia" = 11.4
-    "Indonesia" = 9.9
-    "Ethiopia" = 8.7
-    "Honduras" = 6.3
+    "Colombia" = 12.76
+    "Ethiopia" = 9.13
+    "Honduras" = 5.5
+    "Indonesia" = 7.65
+    "Vietnam" = 27.5
   }
 
   colorize "Brazil" {
@@ -814,7 +838,7 @@ chart bar-vertical {
 ```
 
 ::: tip From the sample library
-This is `packages/lib/src/samples/coffee-production.bpc` — the only sample currently shipping with a `transform` block. The data is authored in arbitrary order on disk; `transform sort` flips it to descending before the bar-vertical renderer reads it.
+Adapted from `packages/lib/src/samples/coffee-production.bpc`, the only sample currently shipping with a `transform` block. The rows are shown here unsorted; `transform sort` reorders them to descending before the bar-vertical renderer reads them.
 :::
 
 In the editor, the same pipeline is built interactively in the Data panel — each step appears as a card, can be reordered by drag, and is re-applied on every keystroke.
@@ -1191,28 +1215,26 @@ Pick a palette by name in a `.bpc` document:
 
 ```bpc
 chart donut {
-  title = "Chrome dominates with two-thirds of the desktop browser market"
-  description = "Worldwide, January 2025"
-  source = "StatCounter"
-  sourceUrl = "https://gs.statcounter.com"
-  colorPalette = "Heep"
+  title = "The richest 1% own more wealth than the entire bottom 90% combined"
+  description = "Share of global wealth by group, 2021"
+  source = "World Inequality Report 2022"
+  sourceUrl = "https://wir2022.wid.world"
+  colorPalette = "Imperator"
   legendPosition = "right"
-  tooltips = true
   displayAsPercentage = true
+  tooltips = true
 
   data {
-    "Chrome" = 65.7
-    "Edge" = 13.1
-    "Safari" = 8.9
-    "Firefox" = 6.3
-    "Opera" = 3.1
-    "Others" = 2.9
+    "Top 1%" = 38
+    "Next 9%" = 38
+    "Middle 40%" = 22
+    "Bottom 50%" = 2
   }
 }
 ```
 
 ::: tip From the sample library
-This is `packages/lib/src/samples/browser-market.bpc` — a donut chart driven entirely by the named `Heep` palette. Each slice picks up the next colour from the resolved palette array.
+Excerpted from `packages/lib/src/samples/browser-market.bpc` — a donut chart driven entirely by the named `Imperator` palette. Each slice picks up the next colour from the resolved palette array.
 :::
 
 Or pull the colours into TypeScript:
@@ -1913,19 +1935,19 @@ The short form `highlight "<name>"` (no body) is the common case — useful insi
 
 ```bpc
 scene "China spotlight" {
-  title = "China emits more than the US and India combined"
+  title = "China alone emits more than the US and India together"
 
   highlight "China"
 }
 
 scene "India rising" {
-  title = "India surpassed the EU in 2023"
+  title = "India passed the EU to become the third-largest emitter"
 
   highlight "India"
 }
 
 scene "Japan declining" {
-  title = "Japan's emissions fell 20% from their peak"
+  title = "Japan's emissions have fallen since their 2013 peak"
 
   highlight "Japan"
 }
@@ -2012,7 +2034,7 @@ The full property surface for each annotation kind is documented in the `Annotat
 
 # DSL — Scenes & transforms
 
-Story-level constructs: **scenes** compose multiple visualisation states into a stepable narrative, and **transforms** describe data-pipeline operations applied before rendering. Scenes can override almost any chart member — including chart `type` and `data` — and add their own annotation-visibility verbs.
+Story-level constructs: **scenes** compose multiple visualisation states into a stepable narrative, and **transforms** describe data-pipeline operations applied before rendering. Scenes can override almost any chart member, including chart `type` and `data`. Annotation lifetime is controlled with the `repeat` property on the annotation itself.
 
 ## Scenes
 
@@ -2022,26 +2044,26 @@ A simple "highlight tour" — each scene swaps the title and emphasises one bar:
 
 ```bpc
 scene "China spotlight" {
-  title = "China emits more than the US and India combined"
+  title = "China alone emits more than the US and India together"
 
   highlight "China"
 }
 
 scene "India rising" {
-  title = "India surpassed the EU in 2023"
+  title = "India passed the EU to become the third-largest emitter"
 
   highlight "India"
 }
 
 scene "Japan declining" {
-  title = "Japan's emissions fell 20% from their peak"
+  title = "Japan's emissions have fallen since their 2013 peak"
 
   highlight "Japan"
 }
 ```
 
 ::: info From `packages/lib/src/samples/co2-emissions-story.bpc`
-Three scenes on a `bar-horizontal` chart. Each scene inherits the chart's data and styling, and only overrides what changes — `title` plus a `highlight` target.
+Three scenes from a `bar-horizontal` story. Each scene inherits the chart's data and styling, and only overrides what changes — `title` plus a `highlight` target.
 :::
 
 Scenes can also override the chart's **type** and **data** wholesale, switching from one visualisation to another mid-story:
@@ -2080,14 +2102,17 @@ scene "Cash crops replaced vegetables" {
 A "story" can transition between chart types — here from a stacked area to a single-series line, then to a different stacked area — by setting `type` and supplying fresh `data` inside the scene.
 :::
 
-Scenes accept the same member set as the top-level chart, **plus** annotation-visibility verbs:
+Scenes accept the same member set as the top-level chart.
 
-| Verb | Effect |
+Annotation lifetime is governed by the `repeat` property on each annotation, not by scene-level verbs:
+
+| Value | Meaning |
 | --- | --- |
-| `hide-annotation "<id>"` | Hide a point annotation set on the chart. |
-| `hide-range "<id>"` | Hide a range annotation. |
-| `hide-note "<id>"` | Hide a free / note annotation. |
-| `show-annotation "<id>"` / `show-range "<id>"` / `show-note "<id>"` | Re-show one previously hidden by an earlier scene. |
+| `repeat = false` (or omitted) | Show only in the scene where the annotation is declared (default). |
+| `repeat = N` | Show in the declaring scene plus the next `N` scenes, so `repeat = 1` spans 2 scenes and `repeat = 3` spans 4. `N` must be a positive integer. |
+| `repeat = true` | Show in the declaring scene and every scene after it. |
+
+A top-level annotation (declared on the chart, outside any scene) anchors at the base chart frame: with no `repeat` it shows only on that first frame, and `repeat` carries it forward into the following scenes.
 
 ## Transforms
 
@@ -2739,19 +2764,19 @@ chart area-stacked {
 chart bar-vertical {
   title = "Brazil produces more coffee than the next three countries combined"
   description = "Million 60-kg bags, 2023/24 crop year"
-  source = "International Coffee Organization"
-  sourceUrl = "https://ico.org"
+  source = "USDA Foreign Agricultural Service"
+  sourceUrl = "https://www.fas.usda.gov/data/coffee-world-markets-and-trade"
   colorPalette = "Harvey"
   valueLabels = true
   valueLabelPosition = "auto"
 
   data {
     "Brazil" = 66.4
-    "Vietnam" = 29
-    "Colombia" = 11.4
-    "Indonesia" = 9.9
-    "Ethiopia" = 8.7
-    "Honduras" = 6.3
+    "Vietnam" = 27.5
+    "Colombia" = 12.76
+    "Ethiopia" = 9.13
+    "Indonesia" = 7.65
+    "Honduras" = 5.5
   }
 
   colorize "Brazil" {
@@ -3492,7 +3517,7 @@ chart donut {
 }
 ```
 
-::: info From `packages/lib/src/samples/browser-market.bpc`
+::: info When a donut fits
 Six categories summing to 100 % — the question is "how big a slice does Chrome own?" A donut answers it directly; a line chart cannot.
 :::
 
@@ -3610,7 +3635,7 @@ chart donut {
 }
 ```
 
-::: info From `packages/lib/src/samples/browser-market.bpc`
+::: info A categorical palette at the 7-color limit
 Six unordered categories, so a categorical palette ("Heep") is the right tool — its hues vary in lightness, which means the donut survives a grayscale conversion. The rule "maximum 7 categorical colors" is exactly at the limit here.
 :::
 
@@ -3727,9 +3752,9 @@ chart bar-vertical {
 
   data {
     "Brazil" = 66.4
-    "Vietnam" = 29
-    "Colombia" = 11.4
-    "Indonesia" = 9.9
+    "Vietnam" = 27.5
+    "Colombia" = 12.76
+    "Indonesia" = 7.65
   }
 
   colorize "Brazil" {
@@ -3738,7 +3763,7 @@ chart bar-vertical {
 }
 ```
 
-::: info From `packages/lib/src/samples/coffee-production.bpc`
+::: info Adapted from `packages/lib/src/samples/coffee-production.bpc`
 Coffee uses two encodings for the highlighted bar: a distinct hue (`#a4432d` red-brown vs. the muted Harvey palette) and clear *lightness* contrast against its neighbours. Convert the chart to greyscale and Brazil still reads as the darkest bar — the second encoding (lightness) carries the story even when CVD removes the first (hue). Compare with `valueLabels = true`, which adds a *third* encoding (the literal number).
 :::
 
@@ -4226,7 +4251,7 @@ chart line-multi {
 }
 ```
 
-::: info From `packages/lib/src/samples/unemployment-rates.bpc`
+::: info Progressive disclosure without hiding the story
 The annotation carries the headline (`"Great Recession peak"`) so the chart stands on its own. `tooltips = true` plus `crosshair = true` then layer progressive disclosure on top: hover anywhere on the x-axis and a dashed vertical line aligns the cursor with all four series at once, while the tooltip shows the four percentages for that year. The essential story is never trapped behind a hover.
 :::
 
@@ -4489,11 +4514,11 @@ chart bar-vertical {
 
   data {
     "Brazil" = 66.4
-    "Vietnam" = 29
-    "Colombia" = 11.4
-    "Indonesia" = 9.9
-    "Ethiopia" = 8.7
-    "Honduras" = 6.3
+    "Vietnam" = 27.5
+    "Colombia" = 12.76
+    "Ethiopia" = 9.13
+    "Indonesia" = 7.65
+    "Honduras" = 5.5
   }
 
   colorize "Brazil" {
@@ -4507,7 +4532,7 @@ chart bar-vertical {
 }
 ```
 
-::: info From `packages/lib/src/samples/coffee-production.bpc`
+::: info Adapted from `packages/lib/src/samples/coffee-production.bpc`
 Five bars stay in muted neutrals; the `colorize "Brazil"` block lifts the one bar the title is about. Direct labels carry the precise numbers by default, removing the need for a y-axis altogether, and gridlines drop out entirely. Restraint, purposefulness, and "start with grey" applied in a single chart.
 :::
 
