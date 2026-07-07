@@ -1,4 +1,4 @@
-const c=`
+const b=`
 /* Blueprint Chart — Runtime Embed Styles
    CSS custom properties with baked-in defaults for standalone iframe usage. */
 
@@ -192,5 +192,26 @@ body {
   margin: 0;
   overflow: hidden;
 }
-`,o="blueprint-chart-resize",t="blueprint-chart-error";function l(e){return typeof e=="object"&&e!==null&&e.type===o&&typeof e.height=="number"?e.height:null}function s(e){return typeof e=="object"&&e!==null&&e.type===t}n();function n(){var e;try{if(typeof globalThis<"u"){const r=globalThis.BLUEPRINT_CHART_RUNTIME_URL;if(typeof r=="string"&&r)return r}return typeof document>"u"?"":((e=document.currentScript)==null?void 0:e.src)??""}catch{return""}}function d(e,r){const a=r?`<script src="${b(r)}"><\/script>`:"",i=r?["try {",'  window.BlueprintChart.renderBpc(document.getElementById("chart"), __BPC_SRC__);',"}","catch (e) {",`  parent.postMessage({ type: "${t}", message: String(e) }, "*");`,"}"]:[`parent.postMessage({ type: "${t}", message: "Blueprint Chart runtime URL unavailable" }, "*");`];return["<!DOCTYPE html>","<html><head>",`<style>${c}</style>`,"</head><body>",'<div id="chart" class="blueprint-chart-container"></div>',a,"<script>",`var __BPC_SRC__ = ${f(e)};`,"function notifySize() {","  var h = document.documentElement.scrollHeight;",`  parent.postMessage({ type: "${o}", height: h }, "*");`,"}",...i,"notifySize();","new ResizeObserver(notifySize).observe(document.body);","<\/script>","</body></html>"].filter(Boolean).join(`
-`)}function f(e){return JSON.stringify(e).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029")}function b(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}export{l as m,s as p,d as y};
+
+/* Dark theme: activated by data-bs-theme="dark" on the document (matching the
+   editor's convention). The chart owns these colors; the dark frame background
+   also drives the renderer's resolveBackgroundColor, so data-mark colors and
+   contrast labels adapt at render time. Scoped to .bc-frame so these override
+   the frame's own light --bc-frame-bg / --bc-text-color declarations (which are
+   set on .bc-frame and would otherwise shadow a document-level override). */
+[data-bs-theme="dark"] body {
+  /* color themes above-bar value labels (fill: currentColor). */
+  background: #1c1c1c;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-bs-theme="dark"] .bc-frame {
+  --bc-frame-bg: #1c1c1c;
+  --bc-text-color: rgba(255, 255, 255, 0.9);
+  --bc-axis-color: rgba(255, 255, 255, 0.6);
+  --bc-grid-color: #333;
+
+  color: rgba(255, 255, 255, 0.9);
+}
+`,o="blueprint-chart-resize",t="blueprint-chart-error";function s(e){return typeof e=="object"&&e!==null&&e.type===o&&typeof e.height=="number"?e.height:null}function m(e){return typeof e=="object"&&e!==null&&e.type===t}l();function l(){var e;try{if(typeof globalThis<"u"){const r=globalThis.BLUEPRINT_CHART_RUNTIME_URL;if(typeof r=="string"&&r)return r}return typeof document>"u"?"":((e=document.currentScript)==null?void 0:e.src)??""}catch{return""}}function p(e,r,a){const c=r?`<script src="${d(r)}"><\/script>`:"",n=a==="dark"?'<html data-bs-theme="dark">':"<html>",i=r?["try {",'  window.BlueprintChart.renderBpc(document.getElementById("chart"), __BPC_SRC__);',"}","catch (e) {",`  parent.postMessage({ type: "${t}", message: String(e) }, "*");`,"}"]:[`parent.postMessage({ type: "${t}", message: "Blueprint Chart runtime URL unavailable" }, "*");`];return["<!DOCTYPE html>",`${n}<head>`,`<style>${b}</style>`,"</head><body>",'<div id="chart" class="blueprint-chart-container"></div>',c,"<script>",`var __BPC_SRC__ = ${f(e)};`,"function notifySize() {","  var h = document.documentElement.scrollHeight;",`  parent.postMessage({ type: "${o}", height: h }, "*");`,"}",...i,"notifySize();","new ResizeObserver(notifySize).observe(document.body);","<\/script>","</body></html>"].filter(Boolean).join(`
+`)}function f(e){return JSON.stringify(e).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029")}function d(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}export{s as m,m as p,p as y};
