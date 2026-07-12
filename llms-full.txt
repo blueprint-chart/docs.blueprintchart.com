@@ -1394,12 +1394,22 @@ A small sampling of the catalogue (run `listPalettes()` for the current full lis
 | name | label | colours |
 | --- | --- | --- |
 | `Blueprint` | Blueprint | 6 |
+| `BlueprintBold` | Blueprint Bold | 6 |
 | `JosefAlbers` | Albers | 5 |
 | `Egypt` | Egypt | 4 |
 | `Klimt` | Klimt | 6 |
 | `Maya` | Maya | 5 |
 | `Sunset` | Sunset | 7 |
 | `TheovanDoesburg` | Van Doesburg | 5 |
+
+::: tip Brand palette
+`BlueprintBold` is the brand palette: the `Blueprint` set with chartreuse as the
+second series. It is designed to pair with the `blueprint-bold` theme, which is
+light/dark responsive: a normal white canvas in light mode and a black brand
+canvas in dark mode. Chartreuse needs a dark surface to read (it is nearly
+invisible on white), so it is a dark-mode colour by design; use the brand
+palette in dark contexts or on a transparent surface over a dark background.
+:::
 
 ## API surface
 
