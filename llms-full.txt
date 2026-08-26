@@ -395,7 +395,6 @@ chart line {
   }
 
   annotation "2015" {
-    id = "2o3cx"
     text = "2015 Paris Agreement to limit global warming to 1.5°C "
     maxWidth = 224
     showLine = true
@@ -934,7 +933,7 @@ transform filter {
 ```
 
 ::: warning No sample uses `transform filter` today
-The block above is synthesized from `packages/editor/src/utils/transforms/applyFilter.ts` rather than copied from a `.bpc` file — none of the 38 shipped samples filter their data on render. Treat the syntax as canonical (it round-trips through the editor) but expect to author it by hand for now.
+The block above is synthesized from `packages/lib/src/transforms/applyFilter.ts` rather than copied from a `.bpc` file — none of the 38 shipped samples filter their data on render. Treat the syntax as canonical (it round-trips through the editor) but expect to author it by hand for now.
 :::
 
 If the target value is empty for any condition other than `equals` / `not-equals`, the filter is a no-op (the row is kept).
@@ -951,7 +950,7 @@ transform group-by {
 ```
 
 ::: warning No sample uses `transform group-by` today
-Synthesized from `packages/editor/src/utils/transforms/applyGroupBy.ts` and `packages/editor/src/enums.ts` (`TransformType.GroupBy = 'group-by'`). Build the step in the editor's Data panel and copy the serialised output if you want a verified starting point.
+Synthesized from `packages/lib/src/transforms/applyGroupBy.ts` and `packages/lib/src/enums.ts` (`TransformType.GroupBy = 'group-by'`). Build the step in the editor's Data panel and copy the serialised output if you want a verified starting point.
 :::
 
 ### Use the pipeline outside the editor
@@ -981,26 +980,27 @@ const { columns, rows, columnTypes } = applyTransforms(
 
 ## API surface
 
-The transform pipeline lives in `@blueprint-chart/editor` rather than `@blueprint-chart/lib`. The `lib` half is the DSL representation:
+The pipeline lives in `@blueprint-chart/lib`, so a headless render of a `.bpc` applies the same steps as the editor:
 
 | Symbol (from `@blueprint-chart/lib`) | One-liner |
 | --- | --- |
 | `TransformNode` (type) | AST node for a `transform <name> { … }` block. |
 | `DslNodeType.Transform` (enum value) | Discriminator on the AST union. |
+| `TransformType` (enum) | `Sort \| Filter \| HideColumns \| Transpose \| Parse \| Rename \| GroupBy \| Computed`. |
+| `TRANSFORM_TYPES` | The set of executed types, and what the validator accepts. |
+| `TransformResult` (type) | `{ columns, rows, columnTypes }` — the value flowing through the chain. |
+| `TransformStep` (type) | `{ type, config }` — one step of the pipeline. |
+| `applyTransformSteps(steps, columns, rows, columnTypes)` | Fold a step list over a table. |
+| `applyTransformNodes(dataStr, nodes)` | Run `transform` AST nodes over a `data { … }` body. |
+| `ParseOperation` / `parseOperations` | Catalogue of `Parse` operations and their accepted input types. |
+| `NULL_VALUE` | Sentinel returned by `Parse` when a cell can't be coerced. |
 
-The `editor` half (used internally by the editor app):
+The editor half is the interactive wrapper around it:
 
 | Symbol (from the editor) | One-liner |
 | --- | --- |
 | `useDataTransforms()` / `useDataTransformsStore()` | Pipeline composable + raw store. |
-| `TransformStep` (type) | `{ id, type, config }` — one row in the pipeline. |
-| `TransformType` (enum) | `Sort \| Filter \| HideColumns \| Transpose \| Parse \| Rename \| GroupBy \| Computed`. |
-| `TransformResult` (type) | `{ columns, rows, columnTypes }` — the value flowing through the chain. |
-| `ParseOperation` / `parseOperations` | Catalogue of `Parse` operations and their accepted input types. |
-| `NULL_VALUE` | Sentinel returned by `Parse` when a cell can't be coerced. |
-
-> [!info] Public-API status
-> The transform pipeline is currently shipped inside `@blueprint-chart/editor` and is consumed by the editor app. It is not re-exported from `@blueprint-chart/lib` today; if you need it in a non-editor consumer, copy `packages/editor/src/utils/transforms/*` or watch for a future move into `lib`.
+| `TransformStep` (type) | The library step plus the `id` the pipeline UI keys rows by. |
 
 ## See also
 
@@ -1706,7 +1706,7 @@ The Blueprint Chart format (`.bpc`) is a declarative text DSL for describing a c
 The canonical grammar lives in [`packages/lib/src/dsl/grammar.peggy`](https://github.com/blueprint-chart/blueprint-chart/blob/main/packages/lib/src/dsl/grammar.peggy). This page is the human-readable specification.
 
 ::: tip Stability
-The DSL is **AST round-trip safe**: `parse(source)` → `serialize(ast)` → `parse(...)` produces an equivalent AST. The round trip is over the AST, not the source text. Comments are parsed as whitespace and are **not** preserved through `serialize`, so a re-serialized document drops any `//` or `/* */` comments the author wrote. Comment attachment is tracked on the [roadmap](https://github.com/blueprint-chart/blueprint-chart/blob/main/ROADMAP.md).
+The DSL is **AST round-trip safe**: `parse(source)` → `serialize(ast)` → `parse(...)` produces an equivalent AST. The round trip is over the AST, not the source text. Comments are attached to the AST node they document and survive `serialize`: the ones written above a member, the one ending a member's line, and the ones after a block's last member. A multi-line comment ending a member's line is re-emitted as a `/* */` block so it still parses.
 :::
 
 ## A minimal example
@@ -1795,7 +1795,7 @@ Numbers accept an optional leading minus, a fractional part (including a leading
 
 ### Comments
 
-Two comment forms exist. Line comments start with `//` and run to end-of-line. Block comments are delimited by `/*` and `*/` and may span multiple lines. Both are treated as whitespace and carry no meaning in the AST.
+Two comment forms exist. Line comments start with `//` and run to end-of-line. Block comments are delimited by `/*` and `*/` and may span multiple lines. Neither carries meaning for rendering, but both are attached to the AST node they sit above, on the same line as, or at the end of the enclosing block, as `leadingComments`, `trailingComment` and `trailingComments`, so they survive a `parse` then `serialize` round trip.
 
 ## Working with the AST
 
@@ -1851,8 +1851,8 @@ Properties are simple key/value pairs:
 
 ```bpc
 title = "Chrome dominates the desktop browser market"
-displayAsPercentage = true
 tooltips = true
+lineSymbolSize = 4
 lineSymbolShape = "diamond"
 ```
 
@@ -1865,7 +1865,7 @@ lineSymbolShape = "diamond"
 
 Property keys may be identifiers (`title`) or strings (`"data-attribute"`).
 
-The full set of recognized property keys per chart type is defined by `ChartTypeOptions` in `@blueprint-chart/lib` and listed in the [API reference](/reference/api/).
+The full set of recognized property keys per chart type is defined by the option defs in `@blueprint-chart/lib` and tabulated on each [chart type page](/charts/), generated from `getChartOptions()` at build time.
 
 ## Data block
 
@@ -1923,7 +1923,7 @@ data {
 ```bpc
 series "Renewables" {
   color = "#2ca02c"
-  interpolation = "monotone"
+  interpolation = "monotoneX"
 }
 ```
 
@@ -2004,9 +2004,11 @@ Three scenes share the same data and successively highlight one country each —
 ```bpc
 area-fill "Lower bound" "Upper bound" {
   color = "#94a3b8"
-  opacity = 0.2
+  opacity = 20
 }
 ```
+
+`opacity` is a percentage from 0 to 100 and defaults to `30`, the same scale as `bgOpacity` on a `range` annotation. `opacity = 0.2` is not a 20 % fill, it is a 0.2 % one, and the band is invisible.
 
 ::: tip
 No bundled sample currently uses `area-fill`. The grammar is documented and parser-tested; the example above is illustrative.
@@ -2034,7 +2036,6 @@ A richer point annotation with a connector line and curved leader:
 
 ```bpc
 annotation "2015" {
-  id = "2o3cx"
   text = "2015 Paris Agreement to limit global warming to 1.5°C "
   maxWidth = 224
   showLine = true
@@ -2254,7 +2255,7 @@ PNG export and headless SVG in Node require optional native deps (`jsdom`, `@nap
 
 Authoritative list of enum exports (from `./enums`):
 
-`ChartType` · `AxisDirection` · `ScaleType` · `GridStyle` · `LabelPosition` · `LabelRotation` · `TickPosition` · `FrameSizing` · `CompassDirection` · `AnnotationLineStyle` · `StrokeStyle` · `AnnotationKind` · `AnnotationAction` · `RangeAnchor` · `Orientation` · `SymbolShape` · `SymbolShowOn` · `SymbolStyle` · `SortDirection` · `SortMode` · `LegendPosition` · `Anchor` · `ValueLabelPosition` · `CrosshairDirection` · `CrosshairStyle` · `StackMode` · `LineStyle` · `ChartOptionType` · `DirectLabelMode` · `Interpolation` · `DslNodeType`
+`ChartType` · `AxisDirection` · `ScaleType` · `GridStyle` · `LabelPosition` · `LabelRotation` · `TickPosition` · `FrameSizing` · `CompassDirection` · `AnnotationLineStyle` · `StrokeStyle` · `AnnotationKind` · `RangeAnchor` · `Orientation` · `SymbolShape` · `SymbolShowOn` · `SymbolStyle` · `SortDirection` · `SortMode` · `LegendPosition` · `Anchor` · `ValueLabelPosition` · `CrosshairDirection` · `CrosshairStyle` · `StackMode` · `LineStyle` · `ChartOptionType` · `DirectLabelMode` · `Interpolation` · `DslNodeType`
 
 ## Types
 
@@ -2284,8 +2285,8 @@ import {
 
 | Symbol | Purpose |
 | --- | --- |
-| `createFrame(options)` | Set up the chart's outer frame (title, description, source, axis labels, note). Returns `FrameElements`. |
-| `createCanvas(options)` | Set up the inner drawing surface. Returns `CanvasElements`. |
+| `createFrame(container, options?)` | Set up the chart's outer frame (title, description, source, axis labels, note) inside `container`. Pass `null` for frameless. Returns `FrameElements`. |
+| `createCanvas(body, margin?)` | Set up the inner drawing surface inside `body` (the frame body element). Returns `CanvasElements`. |
 | `renderVerticalAxis(...)` / `renderHorizontalAxis(...)` | Draw axes with grid lines, ticks, and labels. |
 | `renderLegend(...)` | Draw a chart legend (position + interactivity). |
 
@@ -2533,7 +2534,7 @@ Not sure which type fits your data? Start with the decision framework in the [ch
 
 > Single-series line chart for continuous trend over an ordered domain.
 
-`line` connects data points to show how a single measure changes across an ordered axis — typically time. It supports `interpolation`, `lineSymbols`, `crosshair`, and `tooltips`.
+`line` connects data points to show how a single measure changes across an ordered axis — typically time. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
@@ -2574,6 +2575,52 @@ chart line {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `line` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `interpolation` | select: `linear`, `monotoneX`, `step`, `stepBefore`, `stepAfter`, `basis`, `cardinal`, `catmullRom` | `monotoneX` |
+| `edgePadding` | boolean | `false` |
+| `showVerticalAxis` | boolean | `false` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `dashed` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `verticalScaleType` | select: `linear`, `log` | `linear` |
+| `verticalRangeMin` | text | (unset) |
+| `verticalRangeMax` | text | (unset) |
+| `showHorizontalAxis` | boolean | `true` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `horizontalRangeMin` | text | (unset) |
+| `horizontalRangeMax` | text | (unset) |
+| `valueLabels` | boolean | `false` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `true` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `vertical` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+| `lineSymbols` | boolean | `false` |
+| `lineSymbolShape` | select: `circle`, `square`, `diamond`, `triangle`, `triangleDown`, `cross`, `star` | `circle` |
+| `lineSymbolShowOn` | select: `firstLast`, `first`, `last`, `all` | `firstLast` |
+| `lineSymbolStyle` | select: `filled`, `hollow` | `filled` |
+| `lineSymbolSize` | text | `3.5` |
+| `lineSymbolOpacity` | text | `1` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Aggressively truncating the y-axis exaggerates small movements
@@ -2598,7 +2645,7 @@ chart line {
 
 > Multi-series line chart for comparing several time series or trends.
 
-`line-multi` plots two or more series on shared axes so readers can see divergence, convergence, and ranking shifts over an ordered domain. Supports `interpolation`, `lineSymbols`, `crosshair`, and `tooltips`.
+`line-multi` plots two or more series on shared axes so readers can see divergence, convergence, and ranking shifts over an ordered domain. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
@@ -2638,6 +2685,57 @@ chart line-multi {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `line-multi` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `interpolation` | select: `linear`, `monotoneX`, `step`, `stepBefore`, `stepAfter`, `basis`, `cardinal`, `catmullRom` | `monotoneX` |
+| `edgePadding` | boolean | `false` |
+| `sortMode` | select: `none`, `total`, `within-groups` | `none` |
+| `legend` | boolean | `false` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `auto` |
+| `showVerticalAxis` | boolean | `false` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `dashed` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `verticalScaleType` | select: `linear`, `log` | `linear` |
+| `verticalRangeMin` | text | (unset) |
+| `verticalRangeMax` | text | (unset) |
+| `showHorizontalAxis` | boolean | `true` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `horizontalRangeMin` | text | (unset) |
+| `horizontalRangeMax` | text | (unset) |
+| `valueLabels` | boolean | `false` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `true` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `vertical` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+| `lineSymbols` | boolean | `true` |
+| `lineSymbolShape` | select: `circle`, `square`, `diamond`, `triangle`, `triangleDown`, `cross`, `star` | `circle` |
+| `lineSymbolShowOn` | select: `firstLast`, `first`, `last`, `all` | `firstLast` |
+| `lineSymbolStyle` | select: `filled`, `hollow` | `filled` |
+| `lineSymbolSize` | text | `3.5` |
+| `lineSymbolOpacity` | text | `1` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Five or more lines crossing each other defeats the chart — either highlight one and grey the rest, or split into small multiples
@@ -2662,7 +2760,7 @@ chart line-multi {
 
 > Single-series area chart for magnitude over time; pairs with `areaFill`.
 
-`area` is a line chart with the region below the line filled in, emphasising the magnitude of a single series rather than just its direction. Honours `areaFill`, `areaFillOpacity`, and custom `areaFills: AreaFillConfig[]`. Supports `interpolation`, `lineSymbols`, `crosshair`, and `tooltips`.
+`area` is a line chart with the region below the line filled in, emphasising the magnitude of a single series rather than just its direction. See [Properties](#properties) for every key it accepts. The `area-fill` block that shades a band between two series is rendered by [`line-multi`](./line-multi), not here.
 
 ## When to use
 
@@ -2703,10 +2801,56 @@ chart area {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `area` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `interpolation` | select: `linear`, `monotoneX`, `step`, `stepBefore`, `stepAfter`, `basis`, `cardinal`, `catmullRom` | `monotoneX` |
+| `edgePadding` | boolean | `false` |
+| `showVerticalAxis` | boolean | `false` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `dashed` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `verticalScaleType` | select: `linear`, `log` | `linear` |
+| `verticalRangeMin` | text | (unset) |
+| `verticalRangeMax` | text | (unset) |
+| `showHorizontalAxis` | boolean | `true` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `horizontalRangeMin` | text | (unset) |
+| `horizontalRangeMax` | text | (unset) |
+| `valueLabels` | boolean | `false` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `true` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `vertical` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+| `lineSymbols` | boolean | `false` |
+| `lineSymbolShape` | select: `circle`, `square`, `diamond`, `triangle`, `triangleDown`, `cross`, `star` | `circle` |
+| `lineSymbolShowOn` | select: `firstLast`, `first`, `last`, `all` | `firstLast` |
+| `lineSymbolStyle` | select: `filled`, `hollow` | `filled` |
+| `lineSymbolSize` | text | `3.5` |
+| `lineSymbolOpacity` | text | `1` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - The y-axis must start at zero — the filled area encodes magnitude
-- A fully opaque fill hides the line itself; keep `areaFillOpacity` around 0.2–0.3
+- The fill sits at 0.25 opacity so the line stays readable, and `area` exposes no key to change it; [`area-stacked`](./area-stacked) does, via `areaFillOpacity`
 - Don't stack two area charts by overlapping them; reach for [`area-stacked`](./area-stacked)
 
 ## Related types
@@ -2727,7 +2871,7 @@ chart area {
 
 > Multi-series stacked area chart for composition over time; supports percent stacking.
 
-`area-stacked` layers multiple series on top of each other so readers can see both the individual trends and the cumulative total. Set `stackPercent = true` to switch to a 100 % normalised view. Supports `interpolation`, `lineSymbols`, `crosshair`, and `tooltips`.
+`area-stacked` layers multiple series on top of each other so readers can see both the individual trends and the cumulative total. Set `stackPercent = true` to switch to a 100 % normalised view. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
@@ -2766,6 +2910,54 @@ chart area-stacked {
 }
 ```
 
+
+<!-- options:start -->
+
+## Properties
+
+Every property `area-stacked` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `areaFillOpacity` | text | `0.85` |
+| `interpolation` | select: `linear`, `monotoneX`, `step`, `stepBefore`, `stepAfter`, `basis`, `cardinal`, `catmullRom` | `monotoneX` |
+| `edgePadding` | boolean | `false` |
+| `areaSortMode` | select: `none`, `ascending`, `descending` | `none` |
+| `stacked` | boolean | `true` |
+| `stackPercent` | boolean | `false` |
+| `areaLines` | boolean | `true` |
+| `legend` | boolean | `true` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `""` |
+| `showVerticalAxis` | boolean | `false` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `dashed` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `verticalScaleType` | select: `linear`, `log` | `linear` |
+| `verticalRangeMin` | text | (unset) |
+| `verticalRangeMax` | text | (unset) |
+| `showHorizontalAxis` | boolean | `true` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `horizontalRangeMin` | text | (unset) |
+| `horizontalRangeMax` | text | (unset) |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `true` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `vertical` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+
+<!-- options:end -->
 
 ## Common pitfalls
 
@@ -2838,6 +3030,52 @@ chart bar-vertical {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `bar-vertical` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `swapLabelValue` | boolean | `false` |
+| `barBackground` | boolean | `false` |
+| `barSeparators` | boolean | `false` |
+| `barGap` | text | `60` |
+| `connectedColumns` | boolean | `false` |
+| `connectionsOpacity` | text | `0.15` |
+| `waterfall` | boolean | `false` |
+| `waterfallTotal` | boolean | `false` |
+| `categoryLabelLine` | boolean | `false` |
+| `showVerticalAxis` | boolean | `false` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `off` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `verticalScaleType` | select: `linear`, `log` | `linear` |
+| `verticalRangeMin` | text | (unset) |
+| `verticalRangeMax` | text | (unset) |
+| `showHorizontalAxis` | boolean | `true` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `valueLabels` | boolean | `true` |
+| `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `false` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `both` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Truncating the y-axis exaggerates differences and misleads readers — always start at zero
@@ -2909,6 +3147,52 @@ chart bar-horizontal {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `bar-horizontal` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `swapLabelValue` | boolean | `false` |
+| `barBackground` | boolean | `false` |
+| `barSeparators` | boolean | `false` |
+| `barGap` | text | `60` |
+| `connectedColumns` | boolean | `false` |
+| `connectionsOpacity` | text | `0.15` |
+| `waterfall` | boolean | `false` |
+| `waterfallTotal` | boolean | `false` |
+| `categoryLabelLine` | boolean | `false` |
+| `showVerticalAxis` | boolean | `true` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `showHorizontalAxis` | boolean | `false` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `off` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `horizontalScaleType` | select: `linear`, `log` | `linear` |
+| `horizontalRangeMin` | text | (unset) |
+| `horizontalRangeMax` | text | (unset) |
+| `valueLabels` | boolean | `true` |
+| `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `false` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `both` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Forgetting to sort — an unranked horizontal bar chart loses most of its power
@@ -2933,7 +3217,7 @@ chart bar-horizontal {
 
 > Multi-series vertical bar chart for side-by-side comparison of a small group of series.
 
-`bar-multi` places several series next to each other within each category, so readers can compare them at a glance. Honours `sort`, `sortMode`, `valueLabels`, and `valueLabelPosition`.
+`bar-multi` places several series next to each other within each category, so readers can compare them at a glance. Reorder categories with `sortMode`; the top-level `sort` property is read only by `bar-vertical`, `bar-horizontal`, and `donut`. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
@@ -2973,6 +3257,49 @@ chart bar-multi {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `bar-multi` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `sortMode` | select: `none`, `total`, `within-groups` | `total` |
+| `legend` | boolean | `false` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `auto` |
+| `directLabelAnchor` | select: `start`, `middle`, `end` | `middle` |
+| `showVerticalAxis` | boolean | `false` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `off` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `verticalScaleType` | select: `linear`, `log` | `linear` |
+| `verticalRangeMin` | text | (unset) |
+| `verticalRangeMax` | text | (unset) |
+| `showHorizontalAxis` | boolean | `true` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `valueLabels` | boolean | `true` |
+| `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `false` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `both` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Too many bars per group overwhelms the reader; cap at 3–4 series
@@ -2997,7 +3324,7 @@ chart bar-multi {
 
 > Multi-series grouped vertical bar chart for grouped categorical comparison across a second dimension.
 
-`bar-grouped` clusters bars from several series under each category, exposing a second dimension of comparison. Honours `sort`, `sortMode`, `valueLabels`, and `valueLabelPosition`.
+`bar-grouped` clusters bars from several series under each category, exposing a second dimension of comparison. Reorder categories with `sortMode`; the top-level `sort` property is read only by `bar-vertical`, `bar-horizontal`, and `donut`. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
@@ -3033,6 +3360,50 @@ chart bar-grouped {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `bar-grouped` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `sortMode` | select: `none`, `total`, `within-groups` | `total` |
+| `legend` | boolean | `true` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `barBackground` | boolean | `false` |
+| `barSeparators` | boolean | `false` |
+| `categoryLabelLine` | boolean | `false` |
+| `showVerticalAxis` | boolean | `true` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `showHorizontalAxis` | boolean | `false` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `off` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `horizontalScaleType` | select: `linear`, `log` | `linear` |
+| `horizontalRangeMin` | text | (unset) |
+| `horizontalRangeMax` | text | (unset) |
+| `valueLabels` | boolean | `true` |
+| `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `false` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `both` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Too many bars per group overwhelms the reader — keep series to three or fewer
@@ -3057,13 +3428,13 @@ chart bar-grouped {
 
 > Stacked horizontal bar chart for composition within a category, emphasising the total.
 
-`bar-stacked` segments horizontal bars into subcategories, showing both the individual parts and the total. Honours `stackMode` and `stackPercent` — flip to a 100 % view for pure composition.
+`bar-stacked` segments horizontal bars into subcategories, showing both the individual parts and the total. Set `stackMode = "percent"` to flip to a 100 % view for pure composition. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
 - Showing how a total breaks down into parts
 - Comparing totals across categories while keeping the composition visible
-- 100 % stacked view (`stackPercent = true`) when relative proportions matter more than absolute values
+- 100 % stacked view (`stackMode = "percent"`) when relative proportions matter more than absolute values
 - Categories with long labels that suit the horizontal orientation
 
 ## When NOT to use
@@ -3094,6 +3465,51 @@ chart bar-stacked {
 }
 ```
 
+
+<!-- options:start -->
+
+## Properties
+
+Every property `bar-stacked` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `stackMode` | select: `normal`, `percent` | `normal` |
+| `sortMode` | select: `none`, `total`, `within-groups` | `none` |
+| `legend` | boolean | `true` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `""` |
+| `directLabelAnchor` | select: `start`, `middle`, `end` | `middle` |
+| `categoryLabelLine` | boolean | `false` |
+| `showVerticalAxis` | boolean | `true` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `showHorizontalAxis` | boolean | `false` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `off` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `horizontalScaleType` | select: `linear`, `log` | `linear` |
+| `horizontalRangeMin` | text | (unset) |
+| `horizontalRangeMax` | text | (unset) |
+| `valueLabels` | boolean | `true` |
+| `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `false` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `both` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+
+<!-- options:end -->
 
 ## Common pitfalls
 
@@ -3156,6 +3572,49 @@ chart bar-split {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `bar-split` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `sharedScale` | boolean | `false` |
+| `sortMode` | select: `none`, `total`, `within-groups` | `none` |
+| `legend` | boolean | `true` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `categoryLabelLine` | boolean | `false` |
+| `showVerticalAxis` | boolean | `true` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `showHorizontalAxis` | boolean | `false` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `off` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `horizontalScaleType` | select: `linear`, `log` | `linear` |
+| `horizontalRangeMin` | text | (unset) |
+| `horizontalRangeMax` | text | (unset) |
+| `valueLabels` | boolean | `true` |
+| `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `false` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `both` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Forgetting that the chart is encoding sign; readers should be able to tell what zero means without reading the axis label
@@ -3180,13 +3639,13 @@ chart bar-split {
 
 > Stacked vertical column chart for composition over discrete columns; supports percent stacking.
 
-`column-stacked` is the vertical sibling of [`bar-stacked`](./bar-stacked) — each column breaks down into segments. It's the right choice when the x-axis represents a small number of ordered steps (quarters, fiscal years, study cohorts). Honours `stackMode` and `stackPercent`.
+`column-stacked` is the vertical sibling of [`bar-stacked`](./bar-stacked) — each column breaks down into segments. It's the right choice when the x-axis represents a small number of ordered steps (quarters, fiscal years, study cohorts). Set `stackMode = "percent"` for a 100 % composition view. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
 - Composition over a small number of discrete columns (5–10 quarters, years, or stages)
 - When both the total and the breakdown matter for each column
-- 100 % stacked view (`stackPercent = true`) when readers should focus on relative share
+- 100 % stacked view (`stackMode = "percent"`) when readers should focus on relative share
 
 ## When NOT to use
 
@@ -3213,10 +3672,54 @@ chart column-stacked {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `column-stacked` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `stackMode` | select: `normal`, `percent` | `normal` |
+| `sortMode` | select: `none`, `total`, `within-groups` | `none` |
+| `legend` | boolean | `true` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `""` |
+| `directLabelAnchor` | select: `start`, `middle`, `end` | `middle` |
+| `showVerticalAxis` | boolean | `false` |
+| `verticalAxisDirection` | select: `left`, `right` | `left` |
+| `showVerticalTicks` | boolean | `false` |
+| `verticalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `off` |
+| `verticalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `verticalNumberFormat` | numberFormat | (unset) |
+| `verticalScaleType` | select: `linear`, `log` | `linear` |
+| `verticalRangeMin` | text | (unset) |
+| `verticalRangeMax` | text | (unset) |
+| `showHorizontalAxis` | boolean | `true` |
+| `showHorizontalTicks` | boolean | `false` |
+| `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
+| `horizontalLabelRotation` | select: `auto`, `horizontal`, `vertical` | `horizontal` |
+| `horizontalGridStyle` | select: `solid`, `dashed`, `dotted`, `none` | `none` |
+| `horizontalNumberFormat` | numberFormat | (unset) |
+| `valueLabels` | boolean | `true` |
+| `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `crosshair` | boolean | `false` |
+| `crosshairDirection` | select: `both`, `vertical`, `horizontal` | `both` |
+| `crosshairStyle` | select: `solid`, `dashed`, `dotted` | `dashed` |
+| `crosshairColor` | text | `#999` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Stacking too many series — the top layers float and lose their baseline
-- Switching to `stackPercent = true` without telling the reader hides the change in absolute total
+- Switching to `stackMode = "percent"` without telling the reader hides the change in absolute total
 - Inconsistent segment ordering between columns destroys the visual flow
 
 ## Related types
@@ -3237,7 +3740,7 @@ chart column-stacked {
 
 > Circular part-to-whole chart for very small N.
 
-`pie` divides a circle into proportional slices, each representing a category's share of the whole. Honours `displayAsPercentage`, `showTotal`, `showLabels`, `showValues`, `sliceMax`, and `sliceGroupLabel`.
+`pie` divides a circle into proportional slices, each representing a category's share of the whole. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
@@ -3276,6 +3779,32 @@ chart pie {
 ```
 
 
+<!-- options:start -->
+
+## Properties
+
+Every property `pie` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `legend` | boolean | `false` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `displayAsPercentage` | boolean | `true` |
+| `showTotal` | boolean | `false` |
+| `showLabels` | boolean | `true` |
+| `showValues` | boolean | `true` |
+| `sliceMax` | text | `5` |
+| `sliceGroupLabel` | text | `Others` |
+
+<!-- options:end -->
+
 ## Common pitfalls
 
 - Too many slices destroy readability — cap at five and use `sliceMax` to merge the tail
@@ -3300,7 +3829,7 @@ chart pie {
 
 > Circular part-to-whole chart with a central label slot.
 
-`donut` is a pie chart with the centre removed, opening a slot for a total, key metric, or icon. Honours `displayAsPercentage`, `showTotal`, `showLabels`, `showValues`, `sliceMax`, and `sliceGroupLabel`.
+`donut` is a pie chart with the centre removed, opening a slot for a total, key metric, or icon. See [Properties](#properties) for every key it accepts.
 
 ## When to use
 
@@ -3341,6 +3870,32 @@ chart donut {
 }
 ```
 
+
+<!-- options:start -->
+
+## Properties
+
+Every property `donut` accepts, beside the [frame and layout keys](/reference/dsl/properties) every chart shares. Anything absent from this table is rejected by `validateChart` and ignored by the renderer.
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `colors` | colors | (unset) |
+| `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
+| `autoContrast` | boolean | `false` |
+| `allowDarkMode` | boolean | `true` |
+| `legend` | boolean | `false` |
+| `legendAnchor` | select: `start`, `middle`, `end` | `start` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `auto` |
+| `tooltips` | boolean | `false` |
+| `displayAsPercentage` | boolean | `false` |
+| `showTotal` | boolean | `true` |
+| `showLabels` | boolean | `true` |
+| `showValues` | boolean | `true` |
+| `sliceMax` | text | `6` |
+| `sliceGroupLabel` | text | `Others` |
+
+<!-- options:end -->
 
 ## Common pitfalls
 
@@ -4197,6 +4752,14 @@ chart line {
   showHorizontalAxis = true
   showHorizontalTicks = false
   horizontalGridStyle = "none"
+
+  data {
+    "1980" = 0.26
+    "1990" = 0.45
+    "2000" = 0.39
+    "2010" = 0.73
+    "2024" = 1.28
+  }
 }
 ```
 
@@ -4281,6 +4844,7 @@ chart line-multi {
   legend = false
   tooltips = true
   crosshair = true
+  crosshairDirection = "vertical"
   crosshairStyle = "dashed"
 
   annotation "2009" {
@@ -4299,7 +4863,7 @@ chart line-multi {
 ```
 
 ::: info Progressive disclosure without hiding the story
-The annotation carries the headline (`"Great Recession peak"`) so the chart stands on its own. `tooltips = true` plus `crosshair = true` then layer progressive disclosure on top: hover anywhere on the x-axis and a dashed vertical line aligns the cursor with all four series at once, while the tooltip shows the four percentages for that year. The essential story is never trapped behind a hover.
+The annotation carries the headline (`"Great Recession peak"`) so the chart stands on its own. `tooltips = true` plus `crosshair = true` then layer progressive disclosure on top: hover anywhere in the plot and a dashed vertical line aligns the cursor across all four series, while the tooltip names the nearest point only (`New York – 2009: 9.5`). The tooltip is nearest-point, not a shared readout of every series at that x. The essential story is never trapped behind a hover.
 :::
 
 ## See also
@@ -4640,7 +5204,7 @@ A **description** (or subtitle) sits near the top and tells the reader what they
 
 ## How Blueprint Chart applies the frame
 
-Blueprint Chart's `FrameOptions` matches this hierarchy almost one-to-one: title, description, note, source, and credit are all first-class frame fields. The frame layer is independent of the chart layer, so the same frame can wrap any chart type without changing the type's internals. See the [API reference](/reference/api/) for `createFrame` and the frame options.
+Blueprint Chart's `FrameOptions` matches this hierarchy almost one-to-one: title, description, note, source, and byline (the credit slot) are all first-class frame fields. The frame layer is independent of the chart layer, so the same frame can wrap any chart type without changing the type's internals. See the [API reference](/reference/api/) for `createFrame` and the frame options.
 
 A minimal BPC source illustrates the structure:
 
@@ -4650,7 +5214,7 @@ chart bar-vertical {
   description = "Quarterly revenue, USD millions"
   note        = "Q3 figures preliminary; EMEA excludes Russia"
   source      = "Company filings"
-  credit      = "Chart: Blueprint Chart"
+  byline      = "Chart: Blueprint Chart"
 
   data {
     "AMER" = 142
