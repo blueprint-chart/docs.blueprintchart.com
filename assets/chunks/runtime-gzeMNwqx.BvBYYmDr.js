@@ -1,4 +1,4 @@
-var i="blueprint-chart-resize",r="blueprint-chart-error";function f(e){return typeof e=="object"&&e&&e.type==="blueprint-chart-resize"&&typeof e.height=="number"?e.height:null}function s(e){return typeof e=="object"&&!!e&&e.type==="blueprint-chart-error"}b();function b(){var e;try{if(typeof globalThis<"u"){let n=globalThis.BLUEPRINT_CHART_RUNTIME_URL;if(typeof n=="string"&&n)return n}return typeof document>"u"?"":((e=document.currentScript)==null?void 0:e.src)??""}catch{return""}}function m(e,n,t){let a=n?`<script src="${d(n)}"><\/script>`:"",o=t==="dark"?'<html data-bs-theme="dark">':"<html>",c=n?["try {",'  window.BlueprintChart.renderBpc(document.getElementById("chart"), __BPC_SRC__);',"}","catch (e) {",`  parent.postMessage({ type: "${r}", message: String(e) }, "*");`,"}"]:[`parent.postMessage({ type: "${r}", message: "Blueprint Chart runtime URL unavailable" }, "*");`];return["<!DOCTYPE html>",`${o}<head>`,`<style>
+var c="blueprint-chart-resize",r="blueprint-chart-error";function s(e){return typeof e=="object"&&e&&e.type==="blueprint-chart-resize"&&typeof e.height=="number"?e.height:null}function f(e){return typeof e=="object"&&!!e&&e.type==="blueprint-chart-error"}b();function b(){var e;try{if(typeof globalThis<"u"){let n=globalThis.BLUEPRINT_CHART_RUNTIME_URL;if(typeof n=="string"&&n)return n}return typeof document>"u"?"":((e=document.currentScript)==null?void 0:e.src)??""}catch{return""}}function m(e,n,t){let a=n?`<script src="${l(n)}"><\/script>`:"",o=t==="dark"?'<html data-bs-theme="dark">':"<html>",i=n?["try {",'  window.BlueprintChart.renderBpc(document.getElementById("chart"), __BPC_SRC__);',"}","catch (e) {",`  parent.postMessage({ type: "${r}", message: String(e) }, "*");`,"}"]:[`parent.postMessage({ type: "${r}", message: "Blueprint Chart runtime URL unavailable" }, "*");`];return["<!DOCTYPE html>",`${o}<head>`,`<style>
 /* Blueprint Chart — Runtime Embed Styles
    CSS custom properties with baked-in defaults for standalone iframe usage. */
 
@@ -48,6 +48,56 @@ var i="blueprint-chart-resize",r="blueprint-chart-error";function f(e){return ty
 
 .bc-frame-body {
   padding: 0 var(--bc-frame-padding-right) 0 var(--bc-frame-padding-left);
+}
+
+/* Constrained-height mode (\`heightMode\` fixed or aspect-ratio). post-render.ts
+   adds .bc-frame--constrained and layout-constraints.ts pins the container
+   height with overflow: hidden; without these rules the frame renders at its
+   natural height and is guillotined. Mirrors chart.scss — keep the two in
+   sync. */
+/* An axis label moved inside the plot sits directly on the marks; painting the
+   stroke first keeps it readable over a filled band. */
+.bc-axis-label-inside {
+  paint-order: stroke;
+  stroke: var(--bc-frame-bg, #fff);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.bc-frame--constrained {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bc-frame--constrained .bc-frame-header {
+  position: relative;
+  z-index: 1;
+  background: var(--bc-frame-header-bg, var(--bc-frame-bg, #fff));
+}
+
+.bc-frame--constrained .bc-frame-body {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bc-frame--constrained .bc-frame-note {
+  position: absolute;
+  bottom: var(--bc-footer-h, 0);
+  left: 0;
+  right: 0;
+  z-index: 1;
+}
+
+.bc-frame--constrained .bc-frame-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
 }
 
 .bc-frame-title {
@@ -247,5 +297,5 @@ body {
 
   color: rgba(255, 255, 255, 0.9);
 }
-</style>`,"</head><body>",'<div id="chart" class="blueprint-chart-container"></div>',a,"<script>",`var __BPC_SRC__ = ${l(e)};`,"function notifySize() {","  var h = document.documentElement.scrollHeight;",`  parent.postMessage({ type: "${i}", height: h }, "*");`,"}",...c,"notifySize();","new ResizeObserver(notifySize).observe(document.body);","<\/script>","</body></html>"].filter(Boolean).join(`
-`)}function l(e){return JSON.stringify(e).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029")}function d(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}export{m as d,f as n,s as r};
+</style>`,"</head><body>",'<div id="chart" class="blueprint-chart-container"></div>',a,"<script>",`var __BPC_SRC__ = ${d(e)};`,"function notifySize() {","  var h = document.documentElement.scrollHeight;",`  parent.postMessage({ type: "${c}", height: h }, "*");`,"}",...i,"notifySize();","new ResizeObserver(notifySize).observe(document.body);","<\/script>","</body></html>"].filter(Boolean).join(`
+`)}function d(e){return JSON.stringify(e).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029")}function l(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}export{m as d,s as n,f as r};
