@@ -13,7 +13,7 @@ This file concatenates the Blueprint Chart documentation for ingestion by LLMs a
 
 ## Source: https://docs.blueprintchart.com/guide/getting-started
 
-# Getting Started
+# Getting started
 
 Welcome to the Blueprint Chart documentation. Jump straight to a section below, or read on for the install quickstart.
 
@@ -355,7 +355,7 @@ Full setup, the complete tool/resource reference, and release notes live in the
 
 ## Source: https://docs.blueprintchart.com/guide/dsl-editor
 
-# DSL Editor
+# DSL editor
 
 > The BPC source editor — CodeMirror 6, a Lezer-generated grammar, syntax highlighting tuned for prose-shaped charts, and two-way sync with the visual panels.
 
@@ -819,7 +819,7 @@ See the full list in the [API reference](/reference/api/).
 
 ## Source: https://docs.blueprintchart.com/guide/data-transforms
 
-# Data Transforms
+# Data transforms
 
 > A composable pipeline that shapes raw tabular data into the rows the chart actually renders.
 
@@ -1011,7 +1011,7 @@ The editor half is the interactive wrapper around it:
 
 ## Source: https://docs.blueprintchart.com/guide/embed
 
-# Embedding Charts
+# Embedding charts
 
 Blueprint Chart is **static-first**: every chart is a self-contained artifact independent of any vendor server. There are three ways to put one on a page, and they all run entirely in the browser.
 
@@ -2182,7 +2182,7 @@ Transforms compose — each `transform <name> { … }` block is applied in sourc
 
 ## Source: https://docs.blueprintchart.com/reference/api/
 
-# API Reference
+# API reference
 
 Public surface of [`@blueprint-chart/lib`](https://www.npmjs.com/package/@blueprint-chart/lib). Every symbol on this page is exported from the package root.
 
@@ -2494,7 +2494,7 @@ See [`RELEASING.md`](https://github.com/blueprint-chart/blueprint-chart/blob/mai
 
 ## Source: https://docs.blueprintchart.com/charts/
 
-# Chart Types
+# Chart types
 
 Blueprint Chart ships 13 chart types organized into four families: bar, line, area, and part-to-whole.
 
@@ -3921,7 +3921,7 @@ Every property `donut` accepts, beside the [frame and layout keys](/reference/ds
 
 ## Source: https://docs.blueprintchart.com/handbook/
 
-# Dataviz Handbook
+# Dataviz handbook
 
 > An opinionated field guide for designing honest, clear, and accessible charts — the editorial principles behind Blueprint Chart, distilled into a working reference.
 
@@ -3946,7 +3946,7 @@ Every page in this handbook orbits the same set of principles:
 - **Comparisons make the story** — data in isolation has no meaning.
 - **No 3D, ever** — tilted surfaces lie.
 
-If you read only one page, read [Design Principles](/handbook/design-principles). Everything else is the application of those rules to a specific surface of the chart.
+If you read only one page, read [Design principles](/handbook/design-principles). Everything else is the application of those rules to a specific surface of the chart.
 
 ## One chart that uses every principle
 
@@ -3987,32 +3987,32 @@ A takeaway title states the insight; a single red hue carries meaning; gridlines
 
 | If you want to... | Read |
 | --- | --- |
-| Decide which chart fits your data | [Choosing the Right Chart](/handbook/choosing) |
-| Internalize the foundations | [Design Principles](/handbook/design-principles) |
-| Avoid the most common mistakes | [Anti-Patterns](/handbook/anti-patterns) |
-| Structure the chart frame | [Frame Elements](/handbook/frame-elements) |
+| Decide which chart fits your data | [Choosing the right chart](/handbook/choosing) |
+| Internalize the foundations | [Design principles](/handbook/design-principles) |
+| Avoid the most common mistakes | [Anti-patterns](/handbook/anti-patterns) |
+| Structure the chart frame | [Frame elements](/handbook/frame-elements) |
 | Type for legibility | [Typography](/handbook/typography) |
-| Pick safe, meaningful color | [Color & Palettes](/handbook/color) |
-| Tame axes and grids | [Axes & Grid Lines](/handbook/axes) |
-| Label directly | [Labels & Legends](/handbook/labels) |
+| Pick safe, meaningful color | [Color & palettes](/handbook/color) |
+| Tame axes and grids | [Axes & gridlines](/handbook/axes) |
+| Label directly | [Labels & legends](/handbook/labels) |
 | Tell the story with annotations | [Annotations](/handbook/annotations) |
-| Design interaction honestly | [Tooltips & Interaction](/handbook/tooltips) |
+| Design interaction honestly | [Tooltips & interaction](/handbook/tooltips) |
 | Make charts accessible to everyone | [Accessibility](/handbook/accessibility) |
 
 ## How this connects to Blueprint Chart
 
-Blueprint Chart is the tool we built to make these principles the path of least resistance: grey defaults, baseline-zero where it matters, CVD-aware palettes, direct labeling, and a frame model that mirrors the hierarchy described here. The handbook is editorial; the [Guide](/guide/getting-started), [DSL Spec](/reference/dsl/), and [API Reference](/reference/api/) are how you put it into practice.
+Blueprint Chart is the tool we built to make these principles the path of least resistance: grey defaults, baseline-zero where it matters, CVD-aware palettes, direct labeling, and a frame model that mirrors the hierarchy described here. The handbook is editorial; the [Guide](/guide/getting-started), [DSL Spec](/reference/dsl/), and [API reference](/reference/api/) are how you put it into practice.
 
 ## See also
 
-- [Choosing the Right Chart](/handbook/choosing)
-- [Design Principles](/handbook/design-principles)
-- [Getting Started](/guide/getting-started)
+- [Choosing the right chart](/handbook/choosing)
+- [Design principles](/handbook/design-principles)
+- [Getting started](/guide/getting-started)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/choosing
 
-# Choosing the Right Chart
+# Choosing the right chart
 
 > Before picking a visualization type, answer three questions about goal, content, and audience. Then pick the simplest chart that answers the question. Increase complexity only when the simpler form cannot convey the insight.
 
@@ -4124,15 +4124,15 @@ Six categories summing to 100 % — the question is "how big a slice does Chrome
 
 ## See also
 
-- [Design Principles](/handbook/design-principles)
-- [Anti-Patterns](/handbook/anti-patterns)
-- [Frame Elements](/handbook/frame-elements)
+- [Design principles](/handbook/design-principles)
+- [Anti-patterns](/handbook/anti-patterns)
+- [Frame elements](/handbook/frame-elements)
 - [BPC DSL Specification](/reference/dsl/)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/color
 
-# Color & Palettes
+# Color & palettes
 
 > Palette types, seven key rules, the perceptual-uniformity trap (HCL vs. HSL), ten techniques for reducing color usage, dark mode adjustments, and the components of an organizational palette system.
 
@@ -4266,9 +4266,9 @@ A single red hue carries semantic weight (warming) while the dashed horizontal g
 ## See also
 
 - [Accessibility](/handbook/accessibility)
-- [Design Principles](/handbook/design-principles)
-- [Anti-Patterns](/handbook/anti-patterns)
-- [Axes & Grid Lines](/handbook/axes)
+- [Design principles](/handbook/design-principles)
+- [Anti-patterns](/handbook/anti-patterns)
+- [Axes & gridlines](/handbook/axes)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/accessibility
@@ -4374,10 +4374,10 @@ Blueprint Chart ships 50+ palettes in `packages/lib/src/charts/palettes.ts`; eac
 
 ## See also
 
-- [Color & Palettes](/handbook/color)
+- [Color & palettes](/handbook/color)
 - [Typography](/handbook/typography)
-- [Tooltips & Interaction](/handbook/tooltips)
-- [Design Principles](/handbook/design-principles)
+- [Tooltips & interaction](/handbook/tooltips)
+- [Design principles](/handbook/design-principles)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/annotations
@@ -4517,15 +4517,15 @@ A callout adds the *why* alongside the data ("Surpassed EU in 2023") — a sente
 
 ## See also
 
-- [Frame Elements](/handbook/frame-elements)
-- [Labels & Legends](/handbook/labels)
-- [Design Principles](/handbook/design-principles)
+- [Frame elements](/handbook/frame-elements)
+- [Labels & legends](/handbook/labels)
+- [Design principles](/handbook/design-principles)
 - [BPC DSL Specification](/reference/dsl/annotations)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/labels
 
-# Labels & Legends
+# Labels & legends
 
 > Direct labeling beats legends wherever possible. When you must use a legend, place it where it helps. Use value labels when precision matters and the layout allows.
 
@@ -4559,7 +4559,7 @@ Place labels directly on or adjacent to data elements instead of using a separat
 
 ## Value labels
 
-For bar charts, value labels are **on by default** — they replace the value axis entirely, so each bar carries its number directly. The renderer uses an "auto: label if it fits" rule: when a bar or stack segment is too narrow to hold its label legibly, the label is suppressed and the value falls back to the tooltip instead. See [Axes & Grid Lines](/handbook/axes) for the no-value-axis default.
+For bar charts, value labels are **on by default** — they replace the value axis entirely, so each bar carries its number directly. The renderer uses an "auto: label if it fits" rule: when a bar or stack segment is too narrow to hold its label legibly, the label is suppressed and the value falls back to the tooltip instead. See [Axes & gridlines](/handbook/axes) for the no-value-axis default.
 
 For other chart types:
 
@@ -4632,13 +4632,13 @@ A multi-series bar chart needs a legend to map the three hues to Gold / Silver /
 
 - [Typography](/handbook/typography)
 - [Annotations](/handbook/annotations)
-- [Tooltips & Interaction](/handbook/tooltips)
+- [Tooltips & interaction](/handbook/tooltips)
 - [Accessibility](/handbook/accessibility)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/axes
 
-# Axes & Grid Lines
+# Axes & gridlines
 
 > When zero matters, when it doesn't, how grid lines should whisper rather than shout, how to format numbers, when to use logarithmic scales, and how aspect ratio silently changes a chart's story.
 
@@ -4653,7 +4653,7 @@ A multi-series bar chart needs a legend to map the three hues to Gold / Silver /
 | Scatter plot | **No** | Position encodes the value |
 
 ::: warning
-Truncating the y-axis on a bar or area chart visually exaggerates differences. This is the single most common deceptive pattern in the wild. See [Anti-Patterns](/handbook/anti-patterns).
+Truncating the y-axis on a bar or area chart visually exaggerates differences. This is the single most common deceptive pattern in the wild. See [Anti-patterns](/handbook/anti-patterns).
 :::
 
 ## Grid lines
@@ -4768,15 +4768,15 @@ The vertical axis line and ticks are off; only dashed horizontal gridlines remai
 
 ## See also
 
-- [Labels & Legends](/handbook/labels)
-- [Anti-Patterns](/handbook/anti-patterns)
-- [Design Principles](/handbook/design-principles)
-- [Frame Elements](/handbook/frame-elements)
+- [Labels & legends](/handbook/labels)
+- [Anti-patterns](/handbook/anti-patterns)
+- [Design principles](/handbook/design-principles)
+- [Frame elements](/handbook/frame-elements)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/tooltips
 
-# Tooltips & Interaction
+# Tooltips & interaction
 
 > Tooltips progressively disclose detail, they never replace critical information. Interaction must be consistent, accessible, and keyboard-reachable. Crosshairs and hover states support — not replace — clear visual hierarchy.
 
@@ -4868,9 +4868,9 @@ The annotation carries the headline (`"Great Recession peak"`) so the chart stan
 ## See also
 
 - [Accessibility](/handbook/accessibility)
-- [Labels & Legends](/handbook/labels)
+- [Labels & legends](/handbook/labels)
 - [Annotations](/handbook/annotations)
-- [Design Principles](/handbook/design-principles)
+- [Design principles](/handbook/design-principles)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/typography
@@ -4959,15 +4959,15 @@ Title under 50 characters, description under 70, single-letter axis labels — n
 
 ## See also
 
-- [Frame Elements](/handbook/frame-elements)
-- [Labels & Legends](/handbook/labels)
+- [Frame elements](/handbook/frame-elements)
+- [Labels & legends](/handbook/labels)
 - [Accessibility](/handbook/accessibility)
-- [Design Principles](/handbook/design-principles)
+- [Design principles](/handbook/design-principles)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/anti-patterns
 
-# Anti-Patterns
+# Anti-patterns
 
 > A catalog of what goes wrong: misleading practices that distort the truth, design anti-patterns that obscure the story, and the statistical integrity rules that keep charts honest.
 
@@ -4983,7 +4983,7 @@ Title under 50 characters, description under 70, single-letter axis labels — n
 | Unnormalized choropleth | Shows population density, not the intended variable | Normalize per capita / per unit |
 | Rainbow color scales | Perceptually non-uniform; meaningless ordering | Use sequential or diverging palettes |
 
-See [Axes & Grid Lines](/handbook/axes) for the baseline rules behind the first row, and [Color & Palettes](/handbook/color) for palette guidance that prevents the last two.
+See [Axes & gridlines](/handbook/axes) for the baseline rules behind the first row, and [Color & palettes](/handbook/color) for palette guidance that prevents the last two.
 
 ## Design anti-patterns
 
@@ -4998,7 +4998,7 @@ See [Axes & Grid Lines](/handbook/axes) for the baseline rules behind the first 
 | Missing context | Data without comparison has no story | Add reference lines, targets, time comparisons |
 | Stacking many small segments | Impossible to read individual values | Group small segments; use direct comparison |
 
-See [Labels & Legends](/handbook/labels) for direct-labeling technique and [Annotations](/handbook/annotations) for the 3–4 annotation ceiling.
+See [Labels & legends](/handbook/labels) for direct-labeling technique and [Annotations](/handbook/annotations) for the 3–4 annotation ceiling.
 
 ## Statistical integrity
 
@@ -5044,15 +5044,15 @@ Every anti-pattern traces back to a design principle being violated. If a chart 
 
 ## See also
 
-- [Design Principles](/handbook/design-principles)
-- [Choosing the Right Chart](/handbook/choosing)
-- [Axes & Grid Lines](/handbook/axes)
-- [Color & Palettes](/handbook/color)
+- [Design principles](/handbook/design-principles)
+- [Choosing the right chart](/handbook/choosing)
+- [Axes & gridlines](/handbook/axes)
+- [Color & palettes](/handbook/color)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/design-principles
 
-# Design Principles
+# Design principles
 
 > The core principles behind every good chart: purposefulness, clarity, data-ink ratio, restraint, consistency, starting with grey, the power of comparisons, and the refusal to use 3D.
 
@@ -5152,15 +5152,15 @@ These principles drive the project's visual defaults: grey axis lines, minimal g
 
 ## See also
 
-- [Color & Palettes](/handbook/color)
-- [Anti-Patterns](/handbook/anti-patterns)
-- [Axes & Grid Lines](/handbook/axes)
-- [Frame Elements](/handbook/frame-elements)
+- [Color & palettes](/handbook/color)
+- [Anti-patterns](/handbook/anti-patterns)
+- [Axes & gridlines](/handbook/axes)
+- [Frame elements](/handbook/frame-elements)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/frame-elements
 
-# Frame Elements
+# Frame elements
 
 > A well-structured chart frame has a clear information hierarchy: title, description, chart area, annotations, axis labels, note, source, and credit. Each element has a role and a style treatment that reflects its priority.
 
@@ -5252,13 +5252,13 @@ A declarative title carries the insight (`"…peaked at 9.1% before retreating t
 
 - [Typography](/handbook/typography)
 - [Annotations](/handbook/annotations)
-- [Design Principles](/handbook/design-principles)
+- [Design principles](/handbook/design-principles)
 - [BPC DSL Specification](/reference/dsl/)
 
 
 ## Source: https://docs.blueprintchart.com/handbook/effects-kit
 
-# Effects Kit
+# Effects kit
 
 > The brand effects kit ported from FIG.07 of the effects kit reference: one law, the ALWAYS / NEVER rules (including the rejected variants), and how each effect maps to a real class or component in `@blueprint-chart/ui`.
 
@@ -5289,13 +5289,12 @@ Ink and light condense around a point of attention. Everything below is that sen
 ## Effects and their classes
 
 - **Grid pool** (`.bc-pool`): the drafting grid revealed radially around an anchor via a mask, never full-bleed; set `--bc-pool-x` / `--bc-pool-y` to place it over the anchor.
-- **Pen & highlighter** (`--bc-mark`, `.bc-highlight`): the one marker with two gestures, chartreuse ink on dark, a chartreuse swipe behind body ink on light.
 - **Grain** (`StippleDefs`): the shared stipple filter defs, referenced by `filter: url(#bc-stipple-a|b|c)`; dark marketing surfaces only (the landing hero), never on charts, data, or app UI.
 - **Particle ring** (`BcRing`): a stippled gradient stroke framing one featured element per view; inner edges stay crisp, ordinary cards keep flat hairlines instead.
 - **Buttons** (`.btn-bc-primary`): the everyday emphasis button, chartreuse fill / navy ink (navy fill / chartreuse ink on light); its hover/focus state is the pooled `.bc-pool`, not a separate button.
 
 ## See also
 
-- [Color & Palettes](/handbook/color)
-- [Design Principles](/handbook/design-principles)
-- [Anti-Patterns](/handbook/anti-patterns)
+- [Color & palettes](/handbook/color)
+- [Design principles](/handbook/design-principles)
+- [Anti-patterns](/handbook/anti-patterns)
