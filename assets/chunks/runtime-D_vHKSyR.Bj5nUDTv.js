@@ -235,6 +235,8 @@ var c="blueprint-chart-resize",r="blueprint-chart-error";function s(e){return ty
   padding: 6px 10px;
   font-size: 13px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  max-width: var(--bc-tooltip-max-width, 240px);
+  overflow-wrap: break-word;
   z-index: 9999;
   display: none;
 }
@@ -259,7 +261,7 @@ var c="blueprint-chart-resize",r="blueprint-chart-error";function s(e){return ty
   --bc-frame-footer-padding-top: 0.625rem;
 }
 
-[data-bs-theme="dark"] .bc-frame.bc-theme-blueprint-bold {
+[data-bs-theme="dark"] .bc-frame.bc-theme-blueprint-bold:not([data-bs-theme="dark"] [data-bs-theme="light"] *) {
   --bc-frame-bg: #000000;
   --bc-text-color: rgba(255, 255, 255, 0.95);
   --bc-axis-color: rgba(255, 255, 255, 0.7);
