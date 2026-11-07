@@ -3056,6 +3056,7 @@ Every property `bar-vertical` accepts, beside the [frame and layout keys](/refer
 | `autoContrast` | boolean | `false` |
 | `allowDarkMode` | boolean | `true` |
 | `swapLabelValue` | boolean | `false` |
+| `negativeColor` | text | `""` |
 | `barBackground` | boolean | `false` |
 | `barSeparators` | boolean | `false` |
 | `barGap` | text | `60` |
@@ -3283,7 +3284,9 @@ Every property `bar-multi` accepts, beside the [frame and layout keys](/referenc
 | `autoContrast` | boolean | `false` |
 | `allowDarkMode` | boolean | `true` |
 | `barGap` | text | `60` |
-| `sortMode` | select: `none`, `total`, `within-groups` | `total` |
+| `sortMode` | select: `none`, `total`, `within-groups`, `series` | `total` |
+| `sortSeries` | select | `""` |
+| `sortReverse` | boolean | `false` |
 | `legend` | boolean | `false` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
 | `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
@@ -3387,7 +3390,9 @@ Every property `bar-grouped` accepts, beside the [frame and layout keys](/refere
 | `autoContrast` | boolean | `false` |
 | `allowDarkMode` | boolean | `true` |
 | `barGap` | text | `60` |
-| `sortMode` | select: `none`, `total`, `within-groups` | `total` |
+| `sortMode` | select: `none`, `total`, `within-groups`, `series` | `total` |
+| `sortSeries` | select | `""` |
+| `sortReverse` | boolean | `false` |
 | `legend` | boolean | `true` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
 | `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
@@ -3495,7 +3500,9 @@ Every property `bar-stacked` accepts, beside the [frame and layout keys](/refere
 | `allowDarkMode` | boolean | `true` |
 | `barGap` | text | `60` |
 | `stackMode` | select: `normal`, `percent` | `normal` |
-| `sortMode` | select: `none`, `total`, `within-groups` | `none` |
+| `sortMode` | select: `none`, `total`, `within-groups`, `series` | `none` |
+| `sortSeries` | select | `""` |
+| `sortReverse` | boolean | `false` |
 | `legend` | boolean | `true` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
 | `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
@@ -3602,7 +3609,9 @@ Every property `bar-split` accepts, beside the [frame and layout keys](/referenc
 | `allowDarkMode` | boolean | `true` |
 | `barGap` | text | `60` |
 | `sharedScale` | boolean | `false` |
-| `sortMode` | select: `none`, `total`, `within-groups` | `none` |
+| `sortMode` | select: `none`, `total`, `within-groups`, `series` | `none` |
+| `sortSeries` | select | `""` |
+| `sortReverse` | boolean | `false` |
 | `legend` | boolean | `true` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
 | `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
@@ -3703,7 +3712,9 @@ Every property `column-stacked` accepts, beside the [frame and layout keys](/ref
 | `allowDarkMode` | boolean | `true` |
 | `barGap` | text | `60` |
 | `stackMode` | select: `normal`, `percent` | `normal` |
-| `sortMode` | select: `none`, `total`, `within-groups` | `none` |
+| `sortMode` | select: `none`, `total`, `within-groups`, `series` | `none` |
+| `sortSeries` | select | `""` |
+| `sortReverse` | boolean | `false` |
 | `legend` | boolean | `true` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
 | `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
@@ -3911,6 +3922,10 @@ Every property `donut` accepts, beside the [frame and layout keys](/reference/ds
 | `displayAsPercentage` | boolean | `false` |
 | `verticalNumberFormat` | numberFormat | (unset) |
 | `showTotal` | boolean | `true` |
+| `centerLabel` | select: `total`, `slice`, `custom` | `total` |
+| `centerSlice` | text | `""` |
+| `centerText` | text | `""` |
+| `totalLabel` | text | `Total` |
 | `showLabels` | boolean | `true` |
 | `showValues` | boolean | `true` |
 | `sliceMax` | text | `6` |
@@ -4239,9 +4254,12 @@ Arrows apply to dumbbells only and are ignored in range style.
 
 `sortMode` orders the rows. The default is `value`.
 
-- `value` sorts by the first value column, largest first.
+- `value` sorts by the last value column, largest first.
 - `gap` sorts by the last value column minus the first, largest first. Outside a dumbbell it falls back to `value`.
+- `change` sorts by the percent change from the first value column to the last, largest first. Rows starting at 0 count as no change. Outside a dumbbell it falls back to `value`.
 - `none` keeps the order of your data.
+
+Set `sortReverse = true` to put the smallest first.
 
 ## Labels
 
@@ -4342,7 +4360,8 @@ Every property `dot-plot` accepts, beside the [frame and layout keys](/reference
 | `low` | text | `""` |
 | `high` | text | `""` |
 | `arrows` | select: `none`, `forward`, `backward`, `both` | `none` |
-| `sortMode` | select: `none`, `value`, `gap` | `value` |
+| `sortMode` | select: `none`, `value`, `gap`, `change` | `value` |
+| `sortReverse` | boolean | `false` |
 | `legend` | boolean | `true` |
 | `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
@@ -4363,13 +4382,14 @@ Every property `dot-plot` accepts, beside the [frame and layout keys](/reference
 | `horizontalRangeMin` | text | (unset) |
 | `horizontalRangeMax` | text | (unset) |
 | `valueLabels` | boolean | `false` |
+| `dotLabels` | select: `both`, `start`, `end`, `difference`, `change` | `both` |
 | `tooltips` | boolean | `true` |
 
 <!-- options:end -->
 
 ## Common pitfalls
 
-- Using `gap` sort on a single value or a range: it falls back to `value`
+- Using `gap` or `change` sort on a single value or a range: it falls back to `value`
 - Expecting range bars from columns named `High` and `Low` without setting `dotStyle = "range"`: they draw as dumbbell dots instead
 - Reading the arrow as a trend: it only points from the first column to the last
 - Using a log axis with values, lows or highs at or below 0: those rows are not drawn and are reported
