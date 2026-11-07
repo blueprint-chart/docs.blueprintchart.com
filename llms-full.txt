@@ -2597,6 +2597,9 @@ Every property `line` accepts, beside the [frame and layout keys](/reference/dsl
 | `allowDarkMode` | boolean | `true` |
 | `interpolation` | select: `linear`, `monotoneX`, `step`, `stepBefore`, `stepAfter`, `basis`, `cardinal`, `catmullRom` | `monotoneX` |
 | `edgePadding` | boolean | `false` |
+| `connectGaps` | boolean | `false` |
+| `areaFill` | boolean | `false` |
+| `areaFillBaseline` | select: `bottom`, `zero` | `bottom` |
 | `showVerticalAxis` | boolean | `false` |
 | `verticalAxisDirection` | select: `left`, `right` | `left` |
 | `showVerticalTicks` | boolean | `false` |
@@ -2606,6 +2609,7 @@ Every property `line` accepts, beside the [frame and layout keys](/reference/dsl
 | `verticalScaleType` | select: `linear`, `log` | `linear` |
 | `verticalRangeMin` | text | (unset) |
 | `verticalRangeMax` | text | (unset) |
+| `verticalTickValues` | text | (unset) |
 | `showHorizontalAxis` | boolean | `true` |
 | `showHorizontalTicks` | boolean | `false` |
 | `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
@@ -2709,6 +2713,7 @@ Every property `line-multi` accepts, beside the [frame and layout keys](/referen
 | `allowDarkMode` | boolean | `true` |
 | `interpolation` | select: `linear`, `monotoneX`, `step`, `stepBefore`, `stepAfter`, `basis`, `cardinal`, `catmullRom` | `monotoneX` |
 | `edgePadding` | boolean | `false` |
+| `connectGaps` | boolean | `false` |
 | `sortMode` | select: `none`, `total`, `within-groups` | `none` |
 | `legend` | boolean | `false` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
@@ -2723,6 +2728,7 @@ Every property `line-multi` accepts, beside the [frame and layout keys](/referen
 | `verticalScaleType` | select: `linear`, `log` | `linear` |
 | `verticalRangeMin` | text | (unset) |
 | `verticalRangeMax` | text | (unset) |
+| `verticalTickValues` | text | (unset) |
 | `showHorizontalAxis` | boolean | `true` |
 | `showHorizontalTicks` | boolean | `false` |
 | `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
@@ -2826,6 +2832,7 @@ Every property `area` accepts, beside the [frame and layout keys](/reference/dsl
 | `autoContrast` | boolean | `false` |
 | `allowDarkMode` | boolean | `true` |
 | `areaFillOpacity` | text | `0.25` |
+| `areaFillBaseline` | select: `bottom`, `zero` | `bottom` |
 | `interpolation` | select: `linear`, `monotoneX`, `step`, `stepBefore`, `stepAfter`, `basis`, `cardinal`, `catmullRom` | `monotoneX` |
 | `edgePadding` | boolean | `false` |
 | `showVerticalAxis` | boolean | `false` |
@@ -2837,6 +2844,7 @@ Every property `area` accepts, beside the [frame and layout keys](/reference/dsl
 | `verticalScaleType` | select: `linear`, `log` | `linear` |
 | `verticalRangeMin` | text | (unset) |
 | `verticalRangeMax` | text | (unset) |
+| `verticalTickValues` | text | (unset) |
 | `showHorizontalAxis` | boolean | `true` |
 | `showHorizontalTicks` | boolean | `false` |
 | `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
@@ -2956,6 +2964,7 @@ Every property `area-stacked` accepts, beside the [frame and layout keys](/refer
 | `verticalScaleType` | select: `linear`, `log` | `linear` |
 | `verticalRangeMin` | text | (unset) |
 | `verticalRangeMax` | text | (unset) |
+| `verticalTickValues` | text | (unset) |
 | `showHorizontalAxis` | boolean | `true` |
 | `showHorizontalTicks` | boolean | `false` |
 | `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
@@ -3074,6 +3083,7 @@ Every property `bar-vertical` accepts, beside the [frame and layout keys](/refer
 | `verticalScaleType` | select: `linear`, `log` | `linear` |
 | `verticalRangeMin` | text | (unset) |
 | `verticalRangeMax` | text | (unset) |
+| `verticalTickValues` | text | (unset) |
 | `showHorizontalAxis` | boolean | `true` |
 | `showHorizontalTicks` | boolean | `false` |
 | `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
@@ -3197,6 +3207,7 @@ Every property `bar-horizontal` accepts, beside the [frame and layout keys](/ref
 | `horizontalScaleType` | select: `linear`, `log` | `linear` |
 | `horizontalRangeMin` | text | (unset) |
 | `horizontalRangeMax` | text | (unset) |
+| `horizontalTickValues` | text | (unset) |
 | `valueLabels` | boolean | `true` |
 | `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
 | `tooltips` | boolean | `false` |
@@ -3301,6 +3312,7 @@ Every property `bar-multi` accepts, beside the [frame and layout keys](/referenc
 | `verticalScaleType` | select: `linear`, `log` | `linear` |
 | `verticalRangeMin` | text | (unset) |
 | `verticalRangeMax` | text | (unset) |
+| `verticalTickValues` | text | (unset) |
 | `showHorizontalAxis` | boolean | `true` |
 | `showHorizontalTicks` | boolean | `false` |
 | `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
@@ -3414,6 +3426,7 @@ Every property `bar-grouped` accepts, beside the [frame and layout keys](/refere
 | `horizontalScaleType` | select: `linear`, `log` | `linear` |
 | `horizontalRangeMin` | text | (unset) |
 | `horizontalRangeMax` | text | (unset) |
+| `horizontalTickValues` | text | (unset) |
 | `valueLabels` | boolean | `true` |
 | `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
 | `tooltips` | boolean | `false` |
@@ -3524,6 +3537,7 @@ Every property `bar-stacked` accepts, beside the [frame and layout keys](/refere
 | `horizontalScaleType` | select: `linear`, `log` | `linear` |
 | `horizontalRangeMin` | text | (unset) |
 | `horizontalRangeMax` | text | (unset) |
+| `horizontalTickValues` | text | (unset) |
 | `valueLabels` | boolean | `true` |
 | `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
 | `tooltips` | boolean | `false` |
@@ -3631,6 +3645,7 @@ Every property `bar-split` accepts, beside the [frame and layout keys](/referenc
 | `horizontalScaleType` | select: `linear`, `log` | `linear` |
 | `horizontalRangeMin` | text | (unset) |
 | `horizontalRangeMax` | text | (unset) |
+| `horizontalTickValues` | text | (unset) |
 | `valueLabels` | boolean | `true` |
 | `valueLabelPosition` | select: `auto`, `outside`, `inside` | `auto` |
 | `tooltips` | boolean | `false` |
@@ -3729,6 +3744,7 @@ Every property `column-stacked` accepts, beside the [frame and layout keys](/ref
 | `verticalScaleType` | select: `linear`, `log` | `linear` |
 | `verticalRangeMin` | text | (unset) |
 | `verticalRangeMax` | text | (unset) |
+| `verticalTickValues` | text | (unset) |
 | `showHorizontalAxis` | boolean | `true` |
 | `showHorizontalTicks` | boolean | `false` |
 | `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
@@ -4130,6 +4146,7 @@ Every property `scatter` accepts, beside the [frame and layout keys](/reference/
 | `verticalScaleType` | select: `linear`, `log`, `symlog` | `linear` |
 | `verticalRangeMin` | text | (unset) |
 | `verticalRangeMax` | text | (unset) |
+| `verticalTickValues` | text | (unset) |
 | `showHorizontalAxis` | boolean | `true` |
 | `showHorizontalTicks` | boolean | `false` |
 | `horizontalLabelPosition` | select: `auto`, `inside`, `outside`, `off` | `auto` |
@@ -4139,6 +4156,7 @@ Every property `scatter` accepts, beside the [frame and layout keys](/reference/
 | `horizontalScaleType` | select: `linear`, `log`, `symlog` | `linear` |
 | `horizontalRangeMin` | text | (unset) |
 | `horizontalRangeMax` | text | (unset) |
+| `horizontalTickValues` | text | (unset) |
 
 <!-- options:end -->
 
@@ -4381,6 +4399,7 @@ Every property `dot-plot` accepts, beside the [frame and layout keys](/reference
 | `horizontalScaleType` | select: `linear`, `log` | `linear` |
 | `horizontalRangeMin` | text | (unset) |
 | `horizontalRangeMax` | text | (unset) |
+| `horizontalTickValues` | text | (unset) |
 | `valueLabels` | boolean | `false` |
 | `dotLabels` | select: `both`, `start`, `end`, `difference`, `change` | `both` |
 | `tooltips` | boolean | `true` |
