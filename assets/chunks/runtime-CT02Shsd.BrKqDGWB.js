@@ -1,4 +1,4 @@
-var c="blueprint-chart-resize",r="blueprint-chart-error";function s(e){return typeof e=="object"&&e&&e.type==="blueprint-chart-resize"&&typeof e.height=="number"?e.height:null}function f(e){return typeof e=="object"&&!!e&&e.type==="blueprint-chart-error"}b();function b(){var e;try{if(typeof globalThis<"u"){let n=globalThis.BLUEPRINT_CHART_RUNTIME_URL;if(typeof n=="string"&&n)return n}return typeof document>"u"?"":((e=document.currentScript)==null?void 0:e.src)??""}catch{return""}}function m(e,n,t){let a=n?`<script src="${l(n)}"><\/script>`:"",o=t==="dark"?'<html data-bs-theme="dark">':"<html>",i=n?["try {",'  window.BlueprintChart.renderBpc(document.getElementById("chart"), __BPC_SRC__);',"}","catch (e) {",`  parent.postMessage({ type: "${r}", message: String(e) }, "*");`,"}"]:[`parent.postMessage({ type: "${r}", message: "Blueprint Chart runtime URL unavailable" }, "*");`];return["<!DOCTYPE html>",`${o}<head>`,`<style>
+var c=[{name:"blueprint",label:"Blueprint",description:"The default Blueprint Chart theme"},{name:"blueprint-framed",label:"Blueprint Framed",description:"Adds borders and a tinted footer"},{name:"blueprint-bold",label:"Blueprint Bold",description:"Charts on the blueprint canvas with the full brand palette"}];function m(){return c}function p(){return typeof window>"u"||typeof window.matchMedia!="function"?null:window.matchMedia("(prefers-color-scheme: dark)")}var d=`
 /* Blueprint Chart — Runtime Embed Styles
    CSS custom properties with baked-in defaults for standalone iframe usage. */
 
@@ -156,7 +156,8 @@ var c="blueprint-chart-resize",r="blueprint-chart-error";function s(e){return ty
 }
 
 .bc-frame-byline,
-.bc-frame-source {
+.bc-frame-source,
+.bc-frame-get-the-data {
   --bc-frame-meta-color: var(--bc-text-color, #888);
   --bc-frame-meta-font-size: 0.75rem;
   color: var(--bc-frame-meta-color);
@@ -299,5 +300,5 @@ body {
 
   color: rgba(255, 255, 255, 0.9);
 }
-</style>`,"</head><body>",'<div id="chart" class="blueprint-chart-container"></div>',a,"<script>",`var __BPC_SRC__ = ${d(e)};`,"function notifySize() {","  var h = document.documentElement.scrollHeight;",`  parent.postMessage({ type: "${c}", height: h }, "*");`,"}",...i,"notifySize();","new ResizeObserver(notifySize).observe(document.body);","<\/script>","</body></html>"].filter(Boolean).join(`
-`)}function d(e){return JSON.stringify(e).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029")}function l(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}export{m as d,s as n,f as r};
+`,b="blueprint-chart-resize",r="blueprint-chart-error";function h(e){return typeof e=="object"&&e&&e.type==="blueprint-chart-resize"&&typeof e.height=="number"?e.height:null}function g(e){return typeof e=="object"&&!!e&&e.type==="blueprint-chart-error"}l();function l(){var e;try{if(typeof globalThis<"u"){let n=globalThis.BLUEPRINT_CHART_RUNTIME_URL;if(typeof n=="string"&&n)return n}return typeof document>"u"?"":((e=document.currentScript)==null?void 0:e.src)??""}catch{return""}}function u(e,n,t){let a=n?`<script src="${f(n)}"><\/script>`:"",o=t==="dark"?'<html data-bs-theme="dark">':"<html>",i=n?["try {",'  window.BlueprintChart.renderBpc(document.getElementById("chart"), __BPC_SRC__);',"}","catch (e) {",`  parent.postMessage({ type: "${r}", message: String(e) }, "*");`,"}"]:[`parent.postMessage({ type: "${r}", message: "Blueprint Chart runtime URL unavailable" }, "*");`];return["<!DOCTYPE html>",`${o}<head>`,`<style>${d}</style>`,"</head><body>",'<div id="chart" class="blueprint-chart-container"></div>',a,"<script>",`var __BPC_SRC__ = ${s(e)};`,"function notifySize() {","  var h = document.documentElement.scrollHeight;",`  parent.postMessage({ type: "${b}", height: h }, "*");`,"}",...i,"notifySize();","new ResizeObserver(notifySize).observe(document.body);","<\/script>","</body></html>"].filter(Boolean).join(`
+`)}function s(e){return JSON.stringify(e).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029")}function f(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}export{u as g,b as i,p as n,h as o,g as s,m as t};
