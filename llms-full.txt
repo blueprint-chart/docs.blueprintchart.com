@@ -428,7 +428,7 @@ The CodeMirror 6 stack pulls in `@codemirror/view`, `@codemirror/state`, `@codem
 - `bpcHighlighter` — a `syntaxHighlighting` extension pre-wired to the class-based highlighter.
 - `highlightDsl(code)` — one-shot server-style highlight, used by read-only previews; returns HTML.
 
-The Lezer parser tags DSL keywords (`chart`, `data`, `colorize`, `highlight`, `area-fill`, `annotation`, `range`, `note`, `series`, `scene`, `transform`) and lexical tokens (`Identifier`, `String`, `Number`, `Percentage`, `Equals`, `LineComment`, braces). Each tag maps to a token class in `packages/editor/src/dsl-lang/highlight.scss`, with separate light- and dark-mode rules driven by the `--bc-syn-*` CSS custom properties.
+The Lezer parser tags DSL keywords (`chart`, `data`, `colorize`, `highlight`, `area-fill`, `overlay`, `annotation`, `range`, `note`, `series`, `scene`, `transform`) and lexical tokens (`Identifier`, `String`, `Number`, `Percentage`, `Equals`, `LineComment`, braces). Each tag maps to a token class in `packages/editor/src/dsl-lang/highlight.scss`, with separate light- and dark-mode rules driven by the `--bc-syn-*` CSS custom properties.
 
 ## Two-way sync between DSL and panels
 
@@ -1760,7 +1760,7 @@ chart <chartType> {
   <properties>
   <data block>
   <series>
-  <colorize / highlight / area-fill / annotation / range / note>
+  <colorize / highlight / area-fill / overlay / annotation / range / note>
   <scenes>
   <transforms>
 }
@@ -1837,7 +1837,7 @@ Every snippet across these DSL pages is taken verbatim from a runnable sample in
 The rest of the DSL specification is split across three chapter pages:
 
 - [Properties & data](/reference/dsl/properties) — value-bearing constructs.
-- [Color directives & annotations](/reference/dsl/annotations) — `colorize`, `highlight`, `area-fill`, and the three annotation kinds.
+- [Color directives & annotations](/reference/dsl/annotations) — `colorize`, `highlight`, `area-fill`, `overlay`, and the three annotation kinds.
 - [Scenes & transforms](/reference/dsl/scenes-and-transforms) — story-level constructs and data-pipeline operations.
 
 
@@ -1957,7 +1957,7 @@ None of the bundled `packages/lib/src/samples/*.bpc` files currently exercise to
 
 # DSL — Color directives & annotations
 
-Two families of named blocks that target specific data values to draw the eye: **color directives** (`colorize`, `highlight`, `area-fill`) recolor or emphasize parts of the chart, and **annotations** (`annotation`, `range`, `note`) attach text and shapes to data points, ranges, or absolute positions. Both share the same "named block with a body" shape, and `highlight` is the verb scenes use to switch emphasis — see [Scenes & transforms](/reference/dsl/scenes-and-transforms).
+Two families of named blocks that target specific data values to draw the eye: **color directives** (`colorize`, `highlight`, `area-fill`, `overlay`) recolor, emphasize or layer reference marks on parts of the chart, and **annotations** (`annotation`, `range`, `note`) attach text and shapes to data points, ranges, or absolute positions. Both share the same "named block with a body" shape, and `highlight` is the verb scenes use to switch emphasis — see [Scenes & transforms](/reference/dsl/scenes-and-transforms).
 
 ## Color directives
 
@@ -1966,6 +1966,7 @@ Two families of named blocks that target specific data values to draw the eye: *
 | `colorize "<target>" { … }` | Apply a color rule to a target (axis label, value label, etc.). |
 | `highlight "<target>" { … }` or `highlight "<target>"` | Emphasize a data point or series. The short form has no body. |
 | `area-fill "<from>" "<to>" { … }` | Fill the area between two series with a color (line / area charts). |
+| `overlay "<col>" { … }` or `overlay "<from>" "<to>" { … }` | Draw a value mark or a range band on each bar of a bar or column chart. |
 
 ### `colorize`
 
@@ -2035,6 +2036,105 @@ area-fill "Lower bound" "Upper bound" {
 No bundled sample currently uses `area-fill`. The grammar is documented and parser-tested; the example above is illustrative.
 :::
 
+### `overlay`
+
+```bpc
+overlay "Low (90% CI)" "High (90% CI)" {
+  title = "90% confidence interval"
+  pattern = stripes
+  color = "#64748b"
+}
+
+overlay "2021 to 2022" {
+  title = "Change, 2021 to 2022"
+  color = "#e15759"
+}
+```
+
+Overlays sit on the bars of the seven bar and column charts: `bar-vertical`, `bar-horizontal`, `bar-multi`, `bar-grouped`, `bar-split`, `bar-stacked` and `column-stacked`. They read their values from extra columns of the `data` block. Columns that no overlay claims stay bars.
+
+- **Single series** (`bar-vertical`, `bar-horizontal`): the first unclaimed column is the bar, and every overlay sits on it.
+- **Multi-series** (`bar-multi`, `bar-grouped`, `bar-split`): each overlay sits on one series, named with `bar`. Without `bar`, or with an unknown name, it goes on the first series. On `bar-split` it draws in that series' panel.
+- **Stacked** (`bar-stacked`, `column-stacked`): an overlay spans the whole stack and its values sit on the value axis. Cues compare against the stack total, the sum of the row's visible values. A percent stack (`stackMode = "percent"`) draws no overlay.
+
+The number of columns sets the type: one column draws a value mark (a line across the bar), two columns draw a range band between the two values, whichever is lower or higher.
+
+| Key | Applies to | Meaning |
+| --- | --- | --- |
+| `title` | both | Name shown in the key and the tooltip. Defaults to the column name (`<from> to <to>` for a range). |
+| `color` | both | Any CSS color. Defaults to the text color. |
+| `opacity` | both | Percentage from 0 to 100. Defaults to `100` for a value and `30` for a range. |
+| `pattern` | range only | `solid` (default) or `stripes`. |
+| `hidden` | both | Keeps the overlay in the DSL but does not draw it. A hidden overlay has no cue. |
+| `bar` | both | The series the overlay sits on. Multi-series charts only: on single-series and stacked charts it is ignored and validation warns. A missing or unknown `bar` falls back to the first series, with a warning. |
+| `muteIfCrosses` | range only | A number. Fades every bar whose range on that row includes it, ends included. A row with a missing range end never fades. |
+| `aboveColor` | value only | Fills bars that reach the mark (equal counts as reaching). |
+| `belowColor` | value only | Fills bars below the mark. |
+| `aboveTitle` | value only | Key label for `aboveColor`. Defaults to `Above <title>`. |
+| `belowTitle` | value only | Key label for `belowColor`. Defaults to `Below <title>`. |
+| `repeat` | both | How long the overlay lasts in a scene story, same values as an annotation's `repeat`. See [Scenes & transforms](/reference/dsl/scenes-and-transforms). |
+
+Problems such as an unknown column, a non-numeric cell, three or more columns, `pattern` on a value overlay, a cue key on the wrong kind of overlay, an unknown `bar`, no column left for the bars, or a chart type without bars are reported as warnings with an `overlay-` code.
+
+::: info From `packages/lib/src/samples/household-income-change.bpc`
+The bars are the 2022 to 2023 change in real median household income. A striped range overlay shows the 90% confidence interval (estimate plus or minus the margin of error) and a value overlay marks the previous year's change.
+:::
+
+#### `bar`
+
+```bpc
+overlay "Harris low" "Harris high" {
+  bar = "Harris"
+  title = "Harris margin of error"
+  color = "#1f3d5c"
+}
+```
+
+::: info From `packages/lib/src/samples/election-margin.bpc`
+On `bar-multi`, each candidate gets a range overlay on their own bar.
+:::
+
+#### `muteIfCrosses`
+
+```bpc
+overlay "Low (90% CI)" "High (90% CI)" {
+  title = "90% confidence interval"
+  pattern = stripes
+  color = "#64748b"
+  muteIfCrosses = 0
+}
+```
+
+::: info From `packages/lib/src/samples/household-income-change.bpc`
+Bars whose interval includes zero fade to 45% opacity, so the changes that are not statistically clear read as uncertain. Only the bar fades: the overlay and the labels keep their strength. The fade has no key entry, so explain it in `note`.
+:::
+
+#### `aboveColor` and `belowColor`
+
+```bpc
+overlay "Target" {
+  title = "2% guideline"
+  aboveColor = "#2a9d8f"
+  belowColor = "#e15759"
+}
+```
+
+::: info From `packages/lib/src/samples/nato-defence-spending.bpc`
+Each bar is colored by whether it reaches its row's mark. The key gets "Above 2% guideline" and "Below 2% guideline" entries after the overlay's own. Either key works alone: the other side keeps its normal color. `colorize` wins over these colors, and they win over `negativeColor`. With several value overlays, the first one with a color key colors the bars.
+:::
+
+#### `aboveTitle` and `belowTitle`
+
+```bpc
+overlay "Target" {
+  title = "2% guideline"
+  aboveColor = "#2a9d8f"
+  aboveTitle = "Meets the guideline"
+}
+```
+
+Renames the key entry of a cue color. Without its color, a title is ignored.
+
 ## Annotations
 
 Three kinds of annotation, sharing a body of properties (`text`, `textOffsetX`, `textOffsetY`, `showArrow`, …):
@@ -2098,7 +2198,7 @@ The full property surface for each annotation kind is documented in the `Annotat
 
 # DSL — Scenes & transforms
 
-Story-level constructs: **scenes** compose multiple visualisation states into a stepable narrative, and **transforms** describe data-pipeline operations applied before rendering. Scenes can override almost any chart member, including chart `type` and `data`. Annotation lifetime is controlled with the `repeat` property on the annotation itself.
+Story-level constructs: **scenes** compose multiple visualisation states into a stepable narrative, and **transforms** describe data-pipeline operations applied before rendering. Scenes can override almost any chart member, including chart `type` and `data`. Annotation and overlay lifetime is controlled with the `repeat` property on the annotation or overlay itself.
 
 ## Scenes
 
@@ -2168,15 +2268,17 @@ A "story" can transition between chart types — here from a stacked area to a s
 
 Scenes accept the same member set as the top-level chart.
 
-Annotation lifetime is governed by the `repeat` property on each annotation, not by scene-level verbs:
+Annotation and overlay lifetime is governed by the `repeat` property on each annotation or overlay, not by scene-level verbs:
 
 | Value | Meaning |
 | --- | --- |
-| `repeat = false` (or omitted) | Show only in the scene where the annotation is declared (default). |
+| `repeat = false` (or omitted) | Show only in the scene where it is declared (default). |
 | `repeat = N` | Show in the declaring scene plus the next `N` scenes, so `repeat = 1` spans 2 scenes and `repeat = 3` spans 4. `N` must be a positive integer. |
 | `repeat = true` | Show in the declaring scene and every scene after it. |
 
-A top-level annotation (declared on the chart, outside any scene) anchors at the base chart frame: with no `repeat` it shows only on that first frame, and `repeat` carries it forward into the following scenes.
+A top-level annotation or overlay (declared on the chart, outside any scene) anchors at the base chart frame: with no `repeat` it shows only on that first frame, and `repeat` carries it forward into the following scenes.
+
+An overlay's columns stay overlay columns in every frame, even where the overlay is not shown, so they never turn into bars.
 
 ## Transforms
 
@@ -3085,6 +3187,8 @@ Every property `bar-vertical` accepts, beside the [frame and layout keys](/refer
 | `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
 | `autoContrast` | boolean | `false` |
 | `allowDarkMode` | boolean | `true` |
+| `legend` | boolean | `true` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
 | `swapLabelValue` | boolean | `false` |
 | `negativeColor` | text | `""` |
 | `barBackground` | boolean | `false` |
@@ -3120,6 +3224,14 @@ Every property `bar-vertical` accepts, beside the [frame and layout keys](/refer
 | `crosshairColor` | text | `#999` |
 
 <!-- options:end -->
+
+## Overlays
+
+Overlays add reference marks on each bar: a value mark (one extra column) or a range band (two extra columns), such as a confidence interval or last year's value. Overlay columns are not bars, so they never add bars or change the category count. With `waterfall`, each overlay is drawn relative to the running total at the start of its step, so the marks follow the floating bars. Overlay entries appear in a key under the chart.
+
+Cues change the bars themselves. On a range overlay, `muteIfCrosses = 0` fades every bar whose range includes zero. On a value overlay, `aboveColor` and `belowColor` color each bar by whether it reaches its mark, and add matching entries to the key.
+
+See [`overlay`](/reference/dsl/annotations#overlay) for the keys and an example.
 
 ## Common pitfalls
 
@@ -3204,6 +3316,9 @@ Every property `bar-horizontal` accepts, beside the [frame and layout keys](/ref
 | `colorPalette` | select, see [Palettes](/guide/palettes) | `Blueprint` |
 | `autoContrast` | boolean | `false` |
 | `allowDarkMode` | boolean | `true` |
+| `legend` | boolean | `true` |
+| `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `auto` |
 | `swapLabelValue` | boolean | `false` |
 | `barBackground` | boolean | `false` |
 | `barSeparators` | boolean | `false` |
@@ -3238,6 +3353,68 @@ Every property `bar-horizontal` accepts, beside the [frame and layout keys](/ref
 | `crosshairColor` | text | `#999` |
 
 <!-- options:end -->
+
+## Overlays
+
+Overlays add reference marks on each bar: a value mark (one extra column) or a range band (two extra columns), such as a confidence interval or last year's value. Overlay columns are not bars, so they never add bars or change the category count. With `waterfall`, each overlay is drawn relative to the running total at the start of its step, so the marks follow the floating bars. By default (`directLabelling = auto`) overlays are labelled directly on the first bar; set `directLabelling = ""` to show a key instead.
+
+Cues change the bars themselves. On a range overlay, `muteIfCrosses = 0` fades every bar whose range includes zero. On a value overlay, `aboveColor` and `belowColor` color each bar by whether it reaches its mark, and add matching entries to the key. The cue entries go in the key even when overlay titles are labelled directly.
+
+See [`overlay`](/reference/dsl/annotations#overlay) for the keys and an example.
+
+From `packages/lib/src/samples/nato-defence-spending.bpc`. A value overlay marks the 2% guideline and colors each ally by whether it reaches it.
+
+```bpc
+chart bar-horizontal {
+  title = "Every NATO ally but Slovenia expects to spend at least 2% of GDP on core defence in 2026"
+  description = "Core defence expenditure as a share of real GDP, 2026 estimates, percent"
+  source = "NATO, Defence Investment of NATO Countries (2014-2026), Table 3"
+  sourceUrl = "https://www.nato.int/content/dam/nato/webready/documents/finance/def-exp-2026-en.pdf"
+  note = "Figures are NATO estimates. Iceland has no armed forces and is not in NATO's tables. Slovenia's figure dates from before its new government's review of defence spending."
+  sort = descending
+
+  overlay "Target" {
+    title = "2% guideline"
+    aboveColor = "#2a9d8f"
+    belowColor = "#e15759"
+  }
+
+  data {
+    series = "Share of GDP","Target"
+    "Lithuania" = 5.33,2
+    "Estonia" = 5.10,2
+    "Latvia" = 4.92,2
+    "Poland" = 4.68,2
+    "Greece" = 3.65,2
+    "Denmark" = 3.49,2
+    "Sweden" = 3.22,2
+    "Norway" = 3.17,2
+    "United States" = 3.17,2
+    "Türkiye" = 2.85,2
+    "Germany" = 2.69,2
+    "Finland" = 2.65,2
+    "Netherlands" = 2.58,2
+    "United Kingdom" = 2.56,2
+    "Romania" = 2.43,2
+    "Bulgaria" = 2.22,2
+    "France" = 2.22,2
+    "Montenegro" = 2.17,2
+    "Albania" = 2.15,2
+    "Canada" = 2.13,2
+    "Italy" = 2.10,2
+    "Portugal" = 2.10,2
+    "Hungary" = 2.09,2
+    "North Macedonia" = 2.09,2
+    "Croatia" = 2.03,2
+    "Luxembourg" = 2.03,2
+    "Slovak Republic" = 2.02,2
+    "Czechia" = 2.01,2
+    "Belgium" = 2.00,2
+    "Spain" = 2.00,2
+    "Slovenia" = 1.61,2
+  }
+}
+```
 
 ## Common pitfalls
 
@@ -3350,6 +3527,54 @@ Every property `bar-multi` accepts, beside the [frame and layout keys](/referenc
 
 <!-- options:end -->
 
+## Overlays
+
+Overlays add a value mark (one extra column) or a range band (two extra columns) to the bars of one series, named with `bar`. Overlay columns are not series, so they never add bars. Without `bar`, or with an unknown name, an overlay goes on the first series and validation warns.
+
+Cues apply to that series only. `muteIfCrosses` on a range overlay fades the series' bar in each category whose range includes the number. `aboveColor` and `belowColor` on a value overlay recolor that bar by whether it reaches the mark. A recolored bar loses its series color, but the series keeps its color in the key.
+
+The overlay key always shows on `bar-multi`, even with `legend = false`. `legend` only controls the series names.
+
+From `packages/lib/src/samples/election-margin.bpc`. Each candidate gets a margin of error band on their own bar.
+
+```bpc
+chart bar-multi {
+  title = "Harris and Trump were within the margin of error in all seven swing states"
+  description = "Final Emerson College Polling surveys of likely voters, October 30 to November 2, 2024, percent"
+  source = "Emerson College Polling and The Hill, November 2024 final swing state polls"
+  sourceUrl = "https://emersoncollegepolling.com/november-2024-final-swing-state-polls-too-close-to-call-election-for-president/"
+  note = "Each band is the poll share plus or minus the state survey's credibility interval, from 3 to 3.4 points."
+  colors = "#4e79a7, #e15759"
+  legend = true
+  directLabelling = ""
+
+  overlay "Harris low" "Harris high" {
+    bar = "Harris"
+    title = "Harris margin of error"
+    color = "#1f3d5c"
+  }
+
+  overlay "Trump low" "Trump high" {
+    bar = "Trump"
+    title = "Trump margin of error"
+    color = "#7a1f20"
+  }
+
+  data {
+    series = "Harris","Trump","Harris low","Harris high","Trump low","Trump high"
+    "Arizona" = 48,50,44.8,51.2,46.8,53.2
+    "Georgia" = 49,50,45.6,52.4,46.6,53.4
+    "Michigan" = 50,48,46.6,53.4,44.6,51.4
+    "Nevada" = 48,48,44.7,51.3,44.7,51.3
+    "North Carolina" = 48,49,44.7,51.3,45.7,52.3
+    "Pennsylvania" = 48,49,45,51,46,52
+    "Wisconsin" = 49,49,45.6,52.4,45.6,52.4
+  }
+}
+```
+
+See [`overlay`](/reference/dsl/annotations#overlay) for the keys and an example.
+
 ## Common pitfalls
 
 - Too many bars per group overwhelms the reader; cap at 3–4 series
@@ -3429,6 +3654,7 @@ Every property `bar-grouped` accepts, beside the [frame and layout keys](/refere
 | `legend` | boolean | `true` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
 | `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `auto` |
 | `barBackground` | boolean | `false` |
 | `barSeparators` | boolean | `false` |
 | `categoryLabelLine` | boolean | `false` |
@@ -3457,6 +3683,14 @@ Every property `bar-grouped` accepts, beside the [frame and layout keys](/refere
 | `crosshairColor` | text | `#999` |
 
 <!-- options:end -->
+
+## Overlays
+
+Overlays add a value mark (one extra column) or a range band (two extra columns) to the bars of one series, named with `bar`. Overlay columns are not series, so they never add bars. Without `bar`, or with an unknown name, an overlay goes on the first series and validation warns.
+
+Cues apply to that series only. `muteIfCrosses` on a range overlay fades the series' bar in each category whose range includes the number. `aboveColor` and `belowColor` on a value overlay recolor that bar by whether it reaches the mark. A recolored bar loses its series color, but the series keeps its color in the key.
+
+See [`overlay`](/reference/dsl/annotations#overlay) for the keys and an example.
 
 ## Common pitfalls
 
@@ -3569,6 +3803,14 @@ Every property `bar-stacked` accepts, beside the [frame and layout keys](/refere
 
 <!-- options:end -->
 
+## Overlays
+
+Overlays add a value mark (one extra column) or a range band (two extra columns) across each whole stack. Their values sit on the value axis, and overlay columns never add segments. A percent stack (`stackMode = "percent"`) draws no overlay and validation warns.
+
+Cues compare against the stack total, the sum of the row's visible values. `muteIfCrosses` on a range overlay fades every segment of a stack whose range includes the number. `aboveColor` and `belowColor` on a value overlay recolor every segment of the stack with one color, by whether the total reaches the mark. The series keep their colors in the key.
+
+See [`overlay`](/reference/dsl/annotations#overlay) for the keys and an example.
+
 ## Common pitfalls
 
 - Segments not on the baseline are nearly impossible to compare accurately — put the most important segment first
@@ -3650,6 +3892,7 @@ Every property `bar-split` accepts, beside the [frame and layout keys](/referenc
 | `legend` | boolean | `true` |
 | `legendAnchor` | select: `start`, `middle`, `end` | `start` |
 | `legendPosition` | select: `top`, `bottom`, `left`, `right` | `top` |
+| `directLabelling` | select: `""`, `auto`, `outside`, `inside` | `auto` |
 | `categoryLabelLine` | boolean | `false` |
 | `showVerticalAxis` | boolean | `true` |
 | `verticalAxisDirection` | select: `left`, `right` | `left` |
@@ -3676,6 +3919,14 @@ Every property `bar-split` accepts, beside the [frame and layout keys](/referenc
 | `crosshairColor` | text | `#999` |
 
 <!-- options:end -->
+
+## Overlays
+
+Overlays add a value mark (one extra column) or a range band (two extra columns) to the bars of one series, named with `bar`. The overlay draws in that series' panel, on the panel's scale, and the panel grows to fit it. With direct labelling on, an overlay title is labelled directly only when its bar is the last panel; otherwise the title goes in the key. Overlay columns are not series, so they never add bars. Without `bar`, or with an unknown name, an overlay goes on the first series and validation warns.
+
+Cues apply to that series only. `muteIfCrosses` on a range overlay fades the series' bar in each category whose range includes the number. `aboveColor` and `belowColor` on a value overlay recolor that bar by whether it reaches the mark. A recolored bar loses its series color, but the series keeps its color in the key.
+
+See [`overlay`](/reference/dsl/annotations#overlay) for the keys and an example.
 
 ## Common pitfalls
 
@@ -3782,6 +4033,14 @@ Every property `column-stacked` accepts, beside the [frame and layout keys](/ref
 | `showTotal` | boolean | `false` |
 
 <!-- options:end -->
+
+## Overlays
+
+Overlays add a value mark (one extra column) or a range band (two extra columns) across each whole stack. Their values sit on the value axis, and overlay columns never add segments. A percent stack (`stackMode = "percent"`) draws no overlay and validation warns.
+
+Cues compare against the stack total, the sum of the row's visible values. `muteIfCrosses` on a range overlay fades every segment of a stack whose range includes the number. `aboveColor` and `belowColor` on a value overlay recolor every segment of the stack with one color, by whether the total reaches the mark. The series keep their colors in the key.
+
+See [`overlay`](/reference/dsl/annotations#overlay) for the keys and an example.
 
 ## Common pitfalls
 
